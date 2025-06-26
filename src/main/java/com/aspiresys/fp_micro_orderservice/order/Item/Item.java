@@ -2,6 +2,7 @@ package com.aspiresys.fp_micro_orderservice.order.Item;
 
 import com.aspiresys.fp_micro_orderservice.order.Order;
 import com.aspiresys.fp_micro_orderservice.product.Product;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -49,11 +50,11 @@ public class Item {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    
     @ManyToOne
     @JoinColumn(name = "order_id")
+    @JsonIgnore
     private Order order;
-
     @ManyToOne
     @JoinColumn(name = "product_id")
     private Product product;
@@ -61,6 +62,9 @@ public class Item {
     private int quantity;
 
     public double getSubtotal() {
+        if (product == null || product.getPrice() == null) {
+            return 0.0;
+        }
         return product.getPrice() * quantity;
     }
 

@@ -3,6 +3,7 @@ package com.aspiresys.fp_micro_orderservice.product;
 import java.util.List;
 
 import com.aspiresys.fp_micro_orderservice.order.Item.Item;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -47,7 +48,16 @@ public class Product {
     private Double price;
     private String category;
     private String imageUrl;
-
+    @JsonIgnore
     @OneToMany(mappedBy = "product")
     private List<Item> Items;
+    
+    /**
+     * Gets the price of the product.
+     * Returns 0.0 if price is null to avoid NullPointerException.
+     * @return the price of the product, or 0.0 if null
+     */
+    public Double getPrice() {
+        return price != null ? price : 0.0;
+    }
 }

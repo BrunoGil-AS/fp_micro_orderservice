@@ -27,8 +27,7 @@ public class Order {
     private User user;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<Item> items = new java.util.ArrayList<>();
+    private List<Item> items;
 
     private LocalDateTime createdAt;
     
