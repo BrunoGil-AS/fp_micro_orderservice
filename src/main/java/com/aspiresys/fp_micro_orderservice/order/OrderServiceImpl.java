@@ -30,11 +30,10 @@ public class OrderServiceImpl implements OrderService {
         if (order == null) {
             throw new IllegalArgumentException("Order cannot be null");
         }
-        // checks if that order already exists
-        if (orderRepository.existsById(order.getId())) {
+        // Solo verifica existencia si el id NO es null
+        if (order.getId() != null && orderRepository.existsById(order.getId())) {
             throw new IllegalArgumentException("Order with ID " + order.getId() + " already exists");
         }
-        
         return orderRepository.save(order) != null;
     }
 

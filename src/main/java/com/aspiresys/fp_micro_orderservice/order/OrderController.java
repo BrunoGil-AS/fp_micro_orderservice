@@ -4,14 +4,19 @@ import org.springframework.web.bind.annotation.*;
 
 import com.aspiresys.fp_micro_orderservice.common.dto.AppResponse;
 import com.aspiresys.fp_micro_orderservice.order.Item.Item;
+import com.aspiresys.fp_micro_orderservice.order.Item.ItemService;
 import com.aspiresys.fp_micro_orderservice.product.Product;
+import com.aspiresys.fp_micro_orderservice.product.ProductService;
 import com.aspiresys.fp_micro_orderservice.user.User;
+import com.aspiresys.fp_micro_orderservice.user.UserService;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.core.ParameterizedTypeReference;
+
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -39,6 +44,12 @@ import java.util.List;
 public class OrderController {
     @Autowired
     private OrderService orderService;
+    @Autowired
+    private UserService userService;
+    @Autowired
+    private ProductService productService;
+    @Autowired
+    private ItemService itemService;
 
     @Autowired
     private WebClient.Builder webClientBuilder;
@@ -64,11 +75,12 @@ public class OrderController {
     }
 
     @PostMapping
-    public ResponseEntity<AppResponse<Order>> createOrder(@RequestBody Order order) {
+    public ResponseEntity<AppResponse<Order>> createOrder(@RequestBody Order order) throws InterruptedException {
         // Validar existencia de usuario y producto a través del gateway
         String userUrl = "http://localhost:8080/user-service/users/find?email=" + order.getUser().getEmail();
         String productUrl = "http://localhost:8080/product-service/products"; // returns an AppResponse with a message and a list of products
-
+        User user = null;
+        List<Product> products = null;
         try {
             AppResponse<User> userResponse = webClientBuilder.build()
                 .get()
@@ -76,7 +88,7 @@ public class OrderController {
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<AppResponse<User>>() {})
                 .block();
-            User user = userResponse != null ? userResponse.getData() : null;
+            user = userResponse != null ? userResponse.getData() : null;
             if (user == null) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new AppResponse<>("User does not exist", null));
@@ -93,7 +105,7 @@ public class OrderController {
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<AppResponse<List<Product>>>() {})
                 .block();
-            List<Product> products = productResponse != null ? productResponse.getData() : null;
+            products= productResponse != null ? productResponse.getData() : null;
             if (products == null) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new AppResponse<>("Products not found", null));
@@ -101,7 +113,13 @@ public class OrderController {
             //checks if the list of products from the order exists in the products list
             for (Item item : order.getItems()) {
                 boolean exists = products.stream()
-                    .anyMatch(p -> p.getId().equals(item.getProduct().getId()));
+                    .anyMatch(p -> {
+                        if (productService.getProductById(p.getId()) == null) {
+                            System.out.println("Product does not exist, saving: " + p);
+                            productService.saveProduct(p); // Save the product if it does not exist
+                        }
+                        return p.getId().equals(item.getProduct().getId());
+                    });
                 if (!exists) {
                     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(new AppResponse<>("Product does not exist", null));
@@ -112,8 +130,16 @@ public class OrderController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new AppResponse<>("Failed to retrieve product list", null));
         }
-
+        userService.saveUser(user); // Ensure the user is saved or updated in the user service
+        
+        order.setUser(user); // Set the user from the retrieved user object
+        order.setItemsFromProducts(products); // Set items from the retrieved products list
+        //System.out.println("\n\nOrder to save: " + order+"\n\n");
+        //Thread.sleep(30000);
+        order.setCreatedAt(LocalDateTime.now()); // Set the creation date
+        //itemService.saveAll(order.getItems()); // Save all items in the order
         boolean saved = orderService.save(order);
+        //System.out.println("\n\nOrder to save: " + order+"\n\n");
         if (saved) {
             return ResponseEntity.ok(new AppResponse<>("Order created successfully", order));
         } else {

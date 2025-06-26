@@ -44,6 +44,7 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 @EqualsAndHashCode
+@ToString
 public class User {
     @Id 
     private Long id;

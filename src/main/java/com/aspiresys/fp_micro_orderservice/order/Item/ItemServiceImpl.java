@@ -65,4 +65,13 @@ public class ItemServiceImpl implements ItemService {
         itemRepository.save(item);
         return true;
     }
+
+    @Override
+    public void saveAll(List<Item> items) {
+        if (items == null || items.isEmpty()) {
+            throw new IllegalArgumentException("Item list cannot be null or empty");
+        }
+        itemRepository.saveAll(items);
+        System.out.println("Items saved successfully: " + items);
+    }
 }

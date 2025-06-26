@@ -66,5 +66,12 @@ public interface ItemService {
      * @return true if the item was updated successfully, false otherwise
      */
     boolean update(Item item);
+
+    /**
+     * Saves all items in the provided list.
+     *
+     * @param items the list of items to save
+     */
+    void saveAll(List<Item> items);
     
 }

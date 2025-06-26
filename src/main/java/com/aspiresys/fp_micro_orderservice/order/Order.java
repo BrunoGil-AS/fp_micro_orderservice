@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.aspiresys.fp_micro_orderservice.order.Item.Item;
+import com.aspiresys.fp_micro_orderservice.product.Product;
 import com.aspiresys.fp_micro_orderservice.user.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -15,16 +16,19 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 @EqualsAndHashCode
+@ToString
 public class Order {
     @Id
-    private long id;
-    
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Item> items;
+    @Builder.Default
+    private List<Item> items = new java.util.ArrayList<>();
 
     private LocalDateTime createdAt;
     
@@ -68,5 +72,26 @@ public class Order {
     public void removeItemByProductId(Long productId) {
         if (items == null || productId == null) return;
         items.removeIf(item -> item.getProduct().getId().equals(productId));
+    }
+
+    /**
+     * Sets the item list from a product list.
+     * This method is used to initialize the order with a list of products.
+     * @param products the list of products to be added to the order as items
+     * @throws IllegalArgumentException if products is null or empty
+     */
+    public void setItemsFromProducts(List<Product> products) {
+        if (products == null || products.isEmpty()) {
+            throw new IllegalArgumentException("Product list cannot be null or empty");
+        }
+        items.clear();
+        for (Product product : products) {
+            Item item = Item.builder()
+                    .product(product)
+                    .quantity(1) // Default quantity, can be adjusted later
+                    .build();
+            item.setOrder(this);
+            items.add(item);
+        }
     }
 }

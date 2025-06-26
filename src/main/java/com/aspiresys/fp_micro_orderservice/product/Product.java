@@ -37,6 +37,7 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @EqualsAndHashCode
+@ToString
 public class Product {
     @Id
     private Long id;
