@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Propiedades específicas del Order Service -->
+    <property name="LOG_PATH" value="./logs/order-service"/>
+    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}] - %msg%n"/>
+    <property name="LOG_PATTERN_CONSOLE" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [ORDER-SERVICE] [%logger{36}] - %msg%n"/>
+    
+    <!-- Console Appender para desarrollo -->
+    <springProfile name="!prod">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>${LOG_PATTERN_CONSOLE}</pattern>
+            </encoder>
+        </appender>
+    </springProfile>
+
+    <!-- File Appender para logs del Order Service -->
+    <appender name="FILE_ORDER_SERVICE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/order-service.log</file>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/archived/order-service.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>40MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>600MB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- File Appender para operaciones de órdenes -->
+    <appender name="FILE_ORDER_OPERATIONS" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/order-operations.log</file>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/archived/order-operations.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>35MB</maxFileSize>
+            <maxHistory>45</maxHistory>
+            <totalSizeCap>600MB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- File Appender para transacciones -->
+    <appender name="FILE_TRANSACTIONS" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/order-transactions.log</file>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/archived/order-transactions.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>30MB</maxFileSize>
+            <maxHistory>60</maxHistory>
+            <totalSizeCap>700MB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- File Appender para logs de base de datos -->
+    <appender name="FILE_DATABASE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/order-database.log</file>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/archived/order-database.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>25MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>400MB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- File Appender para errores -->
+    <appender name="FILE_ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/order-service-error.log</file>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/archived/order-service-error.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>25MB</maxFileSize>
+            <maxHistory>60</maxHistory>
+            <totalSizeCap>500MB</totalSizeCap>
+        </rollingPolicy>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>WARN</level>
+        </filter>
+    </appender>
+
+    <!-- Logger específico para Order Service -->
+        <!-- Configuración para desarrollo (!prod) -->
+    <springProfile name="!prod">
+        <logger name="com.aspiresys.fp_micro_orderservice" level="DEBUG" additivity="false">
+<appender-ref ref="FILE_ORDER_SERVICE"/>
+        <appender-ref ref="FILE_ERROR"/>
+<appender-ref ref="CONSOLE"/>
+
+        </logger>
+    </springProfile>
+    
+    <!-- Configuración para producción (prod) -->
+    <springProfile name="prod">
+        <logger name="com.aspiresys.fp_micro_orderservice" level="DEBUG" additivity="false">
+<appender-ref ref="FILE_ORDER_SERVICE"/>
+        <appender-ref ref="FILE_ERROR"/>
+
+        </logger>
+    </springProfile>
+
+    <!-- Logger para controladores de órdenes -->
+        <!-- Configuración para desarrollo (!prod) -->
+    <springProfile name="!prod">
+        <logger name="com.aspiresys.fp_micro_orderservice.controller" level="INFO" additivity="false">
+<appender-ref ref="FILE_ORDER_OPERATIONS"/>
+        <appender-ref ref="FILE_ERROR"/>
+<appender-ref ref="CONSOLE"/>
+
+        </logger>
+    </springProfile>
+    
+    <!-- Configuración para producción (prod) -->
+    <springProfile name="prod">
+        <logger name="com.aspiresys.fp_micro_orderservice.controller" level="INFO" additivity="false">
+<appender-ref ref="FILE_ORDER_OPERATIONS"/>
+        <appender-ref ref="FILE_ERROR"/>
+
+        </logger>
+    </springProfile>
+
+    <!-- Logger para servicios de órdenes -->
+        <!-- Configuración para desarrollo (!prod) -->
+    <springProfile name="!prod">
+        <logger name="com.aspiresys.fp_micro_orderservice.service" level="DEBUG" additivity="false">
+<appender-ref ref="FILE_ORDER_OPERATIONS"/>
+        <appender-ref ref="FILE_ERROR"/>
+<appender-ref ref="CONSOLE"/>
+
+        </logger>
+    </springProfile>
+    
+    <!-- Configuración para producción (prod) -->
+    <springProfile name="prod">
+        <logger name="com.aspiresys.fp_micro_orderservice.service" level="DEBUG" additivity="false">
+<appender-ref ref="FILE_ORDER_OPERATIONS"/>
+        <appender-ref ref="FILE_ERROR"/>
+
+        </logger>
+    </springProfile>
+
+    <!-- Logger específico para transacciones -->
+        <!-- Configuración para desarrollo (!prod) -->
+    <springProfile name="!prod">
+        <logger name="org.springframework.transaction" level="INFO" additivity="false">
+<appender-ref ref="FILE_TRANSACTIONS"/>
+        <appender-ref ref="FILE_ERROR"/>
+<appender-ref ref="CONSOLE"/>
+
+        </logger>
+    </springProfile>
+    
+    <!-- Configuración para producción (prod) -->
+    <springProfile name="prod">
+        <logger name="org.springframework.transaction" level="INFO" additivity="false">
+<appender-ref ref="FILE_TRANSACTIONS"/>
+        <appender-ref ref="FILE_ERROR"/>
+
+        </logger>
+    </springProfile>
+
+    <!-- Logger para procesamientos de órdenes críticos -->
+        <!-- Configuración para desarrollo (!prod) -->
+    <springProfile name="!prod">
+        <logger name="com.aspiresys.fp_micro_orderservice.service.OrderProcessingService" level="INFO" additivity="false">
+<appender-ref ref="FILE_TRANSACTIONS"/>
+        <appender-ref ref="FILE_ERROR"/>
+<appender-ref ref="CONSOLE"/>
+
+        </logger>
+    </springProfile>
+    
+    <!-- Configuración para producción (prod) -->
+    <springProfile name="prod">
+        <logger name="com.aspiresys.fp_micro_orderservice.service.OrderProcessingService" level="INFO" additivity="false">
+<appender-ref ref="FILE_TRANSACTIONS"/>
+        <appender-ref ref="FILE_ERROR"/>
+
+        </logger>
+    </springProfile>
+
+    <!-- Loggers para base de datos -->
+    <logger name="org.hibernate" level="INFO" additivity="false">
+        <appender-ref ref="FILE_DATABASE"/>
+        <appender-ref ref="FILE_ERROR"/>
+    </logger>
+
+    <logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+        <appender-ref ref="FILE_DATABASE"/>
+    </logger>
+
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE" additivity="false">
+        <appender-ref ref="FILE_DATABASE"/>
+    </logger>
+
+    <!-- Logger para HikariCP -->
+    <logger name="com.zaxxer.hikari" level="INFO" additivity="false">
+        <appender-ref ref="FILE_DATABASE"/>
+        <appender-ref ref="FILE_ERROR"/>
+    </logger>
+
+    <!-- Loggers para dependencias externas -->
+    <logger name="org.springframework" level="WARN"/>
+    <logger name="org.springframework.web" level="INFO"/>
+    <logger name="org.springframework.data" level="INFO"/>
+    <logger name="com.mysql" level="WARN"/>
+    <logger name="org.apache" level="WARN"/>
+    <logger name="com.netflix.eureka" level="WARN"/>
+
+    <!-- Root logger -->
+        <!-- Root logger para desarrollo (!prod) -->
+    <springProfile name="!prod">
+        <root level="INFO">
+<appender-ref ref="FILE_ORDER_SERVICE"/>
+        <appender-ref ref="FILE_ERROR"/>
+<appender-ref ref="CONSOLE"/>
+
+        </root>
+    </springProfile>
+    
+    <!-- Root logger para producción (prod) -->
+    <springProfile name="prod">
+        <root level="INFO">
+<appender-ref ref="FILE_ORDER_SERVICE"/>
+        <appender-ref ref="FILE_ERROR"/>
+
+        </root>
+    </springProfile>
+</configuration>
