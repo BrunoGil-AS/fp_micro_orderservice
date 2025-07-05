@@ -54,4 +54,12 @@ public class OrderServiceImpl implements OrderService {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'update'");
     }
+
+    @Override
+    public List<Order> findByUserId(Long id) {
+        if (id == null) {
+            throw new IllegalArgumentException("User ID cannot be null");
+        }
+        return orderRepository.findByUserId(id);
+    }
 }

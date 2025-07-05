@@ -1,5 +1,7 @@
 package com.aspiresys.fp_micro_orderservice.order;
 
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -9,5 +11,11 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
-    // Puedes agregar métodos personalizados aquí si lo necesitas
+    /**
+     * Finds all orders associated with a specific user ID.
+     * 
+     * @param id The ID of the user.
+     * @return List of orders associated with the user.
+     */
+    List<Order> findByUserId(Long id);
 }

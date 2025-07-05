@@ -48,6 +48,7 @@ class OrderControllerTest {
     @Mock
     private WebClient webClient;
 
+    @SuppressWarnings("rawtypes")
     @Mock
     private WebClient.RequestHeadersUriSpec requestHeadersUriSpec;
 
@@ -56,6 +57,8 @@ class OrderControllerTest {
 
     @Mock
     private WebClient.ResponseSpec responseSpec;
+
+    // TODO: Add mocks for the Authentication and Jwt if needed and replace in "null" parameters
 
 
     @BeforeEach
@@ -112,7 +115,7 @@ class OrderControllerTest {
         when(orderService.save(any(Order.class))).thenReturn(true);
 
         // Act
-        ResponseEntity<AppResponse<Order>> response = orderController.createOrder(order);
+        ResponseEntity<AppResponse<Order>> response = orderController.createOrder(order, null);
 
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -193,7 +196,7 @@ class OrderControllerTest {
             .thenReturn(userMono);
         when(userMono.block()).thenReturn(null); // Simula usuario no encontrado
 
-        ResponseEntity<AppResponse<Order>> response = orderController.createOrder(order);
+        ResponseEntity<AppResponse<Order>> response = orderController.createOrder(order, null);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(response.getBody());
@@ -225,7 +228,7 @@ class OrderControllerTest {
             .doReturn(Mono.just(productAppResponse))
             .when(responseSpec).bodyToMono(any(ParameterizedTypeReference.class));
 
-        ResponseEntity<AppResponse<Order>> response = orderController.createOrder(order);
+        ResponseEntity<AppResponse<Order>> response = orderController.createOrder(order, null);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(response.getBody());
@@ -249,7 +252,7 @@ class OrderControllerTest {
             .thenReturn(userMono);
         when(userMono.block()).thenThrow(new RuntimeException("Connection error"));
 
-        ResponseEntity<AppResponse<Order>> response = orderController.createOrder(order);
+        ResponseEntity<AppResponse<Order>> response = orderController.createOrder(order, null);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(response.getBody());
@@ -262,7 +265,7 @@ class OrderControllerTest {
         Long orderId = 1L;
         when(orderService.deleteById(orderId)).thenReturn(true);
 
-        ResponseEntity<AppResponse<Boolean>> response = orderController.deleteOrder(orderId);
+        ResponseEntity<AppResponse<Boolean>> response = orderController.deleteOrder(orderId, null);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
@@ -276,7 +279,7 @@ class OrderControllerTest {
         Long orderId = 2L;
         when(orderService.deleteById(orderId)).thenReturn(false);
 
-        ResponseEntity<AppResponse<Boolean>> response = orderController.deleteOrder(orderId);
+        ResponseEntity<AppResponse<Boolean>> response = orderController.deleteOrder(orderId, null);
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertNotNull(response.getBody());

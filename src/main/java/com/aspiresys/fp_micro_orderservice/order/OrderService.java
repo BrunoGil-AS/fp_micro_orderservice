@@ -41,4 +41,11 @@ public interface OrderService {
      * @throws IllegalArgumentException if the order is null or does not exist.
      */
     boolean update(Order order);
+
+    /**
+     * Finds orders by user ID.
+     * @param id The ID of the user.
+     * @return List of orders associated with the user.
+     */
+    List<Order> findByUserId(Long id);
 }

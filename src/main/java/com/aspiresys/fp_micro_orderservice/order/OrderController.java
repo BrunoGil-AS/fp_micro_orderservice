@@ -1,23 +1,26 @@
 package com.aspiresys.fp_micro_orderservice.order;
 
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.security.core.Authentication;
 import com.aspiresys.fp_micro_orderservice.common.dto.AppResponse;
 import com.aspiresys.fp_micro_orderservice.order.Item.Item;
-import com.aspiresys.fp_micro_orderservice.product.Product;
-import com.aspiresys.fp_micro_orderservice.product.ProductService;
 import com.aspiresys.fp_micro_orderservice.user.User;
 import com.aspiresys.fp_micro_orderservice.user.UserService;
 
+import lombok.extern.java.Log;
+
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.core.ParameterizedTypeReference;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
 
 /**
  * 
@@ -41,28 +44,25 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/orders")
+@Log
 public class OrderController {
     @Autowired
     private OrderService orderService;
     @Autowired
     private UserService userService;
     @Autowired
-    private ProductService productService;
+    private OrderValidationService orderValidationService;
 
-
-    @Autowired
-    private WebClient.Builder webClientBuilder;
-
-    
-
-    @GetMapping
+    @GetMapping("/")
+    @PreAuthorize("hasRole('ADMIN')") // Only ADMIN can access this endpoint
     public ResponseEntity<AppResponse<List<Order>>> getAllOrders() {
         return ResponseEntity.ok(
                 new AppResponse<>("Orders retrieved:", orderService.findAll()));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<AppResponse<Order>> getOrderById(@PathVariable Long id) {
+    @GetMapping("/find")
+    @PreAuthorize("hasRole('ADMIN')") // Allow both ADMIN and USER to access
+    public ResponseEntity<AppResponse<Order>> getOrderById(@RequestParam Long id) {
         Order order = orderService.findById(id)
                 .orElse(null);
         if (order != null) {
@@ -73,104 +73,81 @@ public class OrderController {
         }
     }
 
-    @PostMapping
-    public ResponseEntity<AppResponse<Order>> createOrder(@RequestBody Order order) {
-        // Validar existencia de usuario y producto a través del gateway
-        String userUrl = "http://localhost:8080/user-service/users/find?email=" + order.getUser().getEmail();
-        String productUrl = "http://localhost:8080/product-service/products";
-        User user = null;
-        List<Product> products = null;
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('USER')") // Solo usuarios con rol USER pueden acceder a sus propias órdenes
+    public ResponseEntity<AppResponse<List<Order>>> getOrdersByUser(Authentication authentication) {
+        String email = ((Jwt) (authentication.getPrincipal())).getClaimAsString("sub");
+        User user = userService.getUserByEmail(email);
+        
+        if (user == null) {
+            log.warning("User with email " + email + " does not exist.");
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(new AppResponse<>("User does not have any orders", new ArrayList<>()));
+        }
+        List<Order> orders = orderService.findByUserId(user.getId());
+        log.info("Retrieved " + orders.size() + " orders for user: " + email);
+        return ResponseEntity.ok(new AppResponse<>("Orders retrieved for user: " + email, orders));
+    }
 
-        // Validar y obtener usuario
+
+    @PostMapping("/me")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<AppResponse<Order>> createOrder(@RequestBody Order order, Authentication authentication) {
+        String email = ((Jwt) (authentication.getPrincipal())).getClaimAsString("subject");
         try {
-            AppResponse<User> userResponse = webClientBuilder.build()
-                .get()
-                .uri(userUrl)
-                .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<AppResponse<User>>() {})
-                .block();
-            user = userResponse != null ? userResponse.getData() : null;
+            // Validate order asynchronously (user and products in parallel)
+            OrderValidationService.OrderValidationResult validationResult = 
+                orderValidationService.validateOrderAsync(order).get();
+            
+            if (!validationResult.isValid()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new AppResponse<>(validationResult.getErrorMessage(), null));
+            }
+            User user = validationResult.getUser();
             if (user == null) {
+                log.warning("User with email " + email + " does not exist.");
+                if (validationResult.getErrorMessage() != null) {
+                    log.severe("Validation error: " + validationResult.getErrorMessage());
+                }
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new AppResponse<>("User does not exist", null));
+                        .body(new AppResponse<>("User does not exist", null));
             }
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new AppResponse<>("Communication error with user service", null));
-        }
-
-        // Validar y obtener productos
-        try {
-            AppResponse<List<Product>> productResponse = webClientBuilder.build()
-                .get()
-                .uri(productUrl)
-                .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<AppResponse<List<Product>>>() {})
-                .block();
-            products = productResponse != null ? productResponse.getData() : null;
-            if (products == null) {
+            if (user.getEmail() == null || !user.getEmail().equals(email)) {
+                log.warning("User email mismatch: expected " + email + ", got " + user.getEmail());
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new AppResponse<>("Products not found", null));
+                        .body(new AppResponse<>("You are not allowed to create orders for others", null));
             }
 
-            // Validar que los productos existen y guardarlos si es necesario
-            List<Item> tempItems = order.getItems(); // Guardar los items temporalmente
-            for (Item item : tempItems) {
-                boolean exists = products.stream()
-                    .anyMatch(p -> {
-                        if (productService.getProductById(p.getId()) == null) {
-                            System.out.println("Product does not exist, saving: " + p);
-                            productService.saveProduct(p);
-                        }
-                        return p.getId().equals(item.getProduct().getId());
-                    });
-                if (!exists) {
-                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(new AppResponse<>("Product does not exist", null));
-                }
-                
-                // Asegurar que el producto tiene toda la información necesaria
-                Product fullProduct = products.stream()
-                    .filter(p -> p.getId().equals(item.getProduct().getId()))
-                    .findFirst()
-                    .orElse(null);
-                
-                if (fullProduct != null) {
-                    item.setProduct(fullProduct); // Usar el producto completo con todos los datos
-                } else {
-                    // Si no se encuentra en la lista, obtenerlo de la base de datos local
-                    Product localProduct = productService.getProductById(item.getProduct().getId());
-                    if (localProduct != null) {
-                        item.setProduct(localProduct);
-                    }
-                }
+            // Ensure the user is saved or updated in the user service
+            userService.saveUser(user);
+            
+            // Create new order
+            Order newOrder = Order.builder()
+                        .user(user)
+                        .createdAt(LocalDateTime.now())
+                        .build();
+            
+            // Set up items with validated products
+            for (Item item : order.getItems()) {
+                item.setOrder(newOrder);
+                System.out.println("Item product: " + item.getProduct());
+                System.out.println("Item product price: " + (item.getProduct() != null ? item.getProduct().getPrice() : "null"));
             }
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new AppResponse<>("Failed to retrieve product list", null));
-        }
-        userService.saveUser(user); // Ensure the user is saved or updated in the user service
-        Order newOrder = Order.builder()
-                    .user(user)
-                    .createdAt(LocalDateTime.now())
-                    .build();
-        
-        for (Item item : order.getItems()) {
-            // Verificar si el producto existe en la lista de productos
-            item.setOrder(newOrder);
-            System.out.println("Item product: " + item.getProduct());
-            System.out.println("Item product price: " + (item.getProduct() != null ? item.getProduct().getPrice() : "null"));
-        }
-        System.out.println("New Order: " + newOrder);
-        order.getItems().forEach(item -> {
-            System.out.println("Item: " + item);
-            System.out.println("Product: " + item.getProduct());
-            System.out.println("Product Price: " + (item.getProduct() != null ? item.getProduct().getPrice() : "null"));
-        });
-        
-        newOrder.setItems(new ArrayList<>(order.getItems())); // Set items from the request
-        // Guardar la orden
-        try{
+            
+            StringBuilder logBuilder = new StringBuilder();
+            logBuilder.append("New Order: ").append(newOrder).append("\n");
+            order.getItems().forEach(item -> {
+                logBuilder.append("Item: ").append(item).append("\n");
+                logBuilder.append("Product: ").append(item.getProduct()).append("\n");
+                logBuilder.append("Product Price: ")
+                          .append(item.getProduct() != null ? item.getProduct().getPrice() : "null")
+                          .append("\n");
+            });
+            log.info(logBuilder.toString());
+            
+            newOrder.setItems(new ArrayList<>(order.getItems())); // Set items from the request
+            
+            // Save the order
             if (orderService.save(newOrder)) {
                 return ResponseEntity.ok(new AppResponse<>("Order created successfully", newOrder));
             } else {
@@ -178,18 +155,77 @@ public class OrderController {
                         .body(new AppResponse<>("Failed to create order", null));
             }
         } catch (Exception e) {
+            log.warning("Error creating order: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new AppResponse<>("Error saving order: " + e.getMessage(), null));
+                    .body(new AppResponse<>("Error creating order: " + e.getMessage(), null));
         }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<AppResponse<Boolean>> deleteOrder(@PathVariable Long id) {
-        if (orderService.deleteById(id)) {
-            return ResponseEntity.ok(new AppResponse<>("Order deleted successfully", true));
-        } else {
+    @PutMapping("/me")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<AppResponse<Order>> updateOrder(@RequestBody Order order, Authentication authentication) {
+        String email = ((Jwt) (authentication.getPrincipal())).getClaimAsString("subject");
+        User user = userService.getUserByEmail(email);
+        if (user == null) {
+            log.warning("User " + email + " attempted to update order but does not exist.");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new AppResponse<>("User not found", null));
+        }
+        Order existingOrder = orderService.findById(order.getId())
+                .orElse(null);
+        if (existingOrder == null) {
+            log.warning("User " + user.getEmail() + " attempted to update order " + order.getId() + " that does not exist.");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new AppResponse<>("Order not found", null));
+        }
+        if (!existingOrder.getUser().getId().equals(user.getId())) {
+            log.warning("User " + user.getEmail() + " attempted to update order " + order.getId() + " that does not belong to them.");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)// For security reasons, this service won't tell if the order exists or not
+                    .body(new AppResponse<>("Order not found", null));
+        }
+        existingOrder.setItems(order.getItems());
+        try {
+            if (orderService.update(existingOrder)) {
+                return ResponseEntity.ok(new AppResponse<>("Order updated successfully", existingOrder));
+            } else {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(new AppResponse<>("Failed to update order", null));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new AppResponse<>("Error updating order: " + e.getMessage(), null));
+        }
+    }
+
+    @DeleteMapping("/me")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<AppResponse<Boolean>> deleteOrder(@RequestParam Long id, Authentication authentication) {
+
+        String email = ((Jwt) (authentication.getPrincipal())).getClaimAsString("subject");
+        User user = userService.getUserByEmail(email);
+        Order order = orderService.findById(id)
+                .orElse(null);
+        if (user == null) {
+            log.warning("User " + email + " attempted to delete order " + id + " but does not exist.");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new AppResponse<>("User not found", false)); 
+        }
+        if (order == null) {
+            log.warning("User " + user.getEmail() + " attempted to delete order " + id + " that does not exist.");
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(new AppResponse<>("Order not found", false));
+        }
+        if (!order.getUser().getId().equals(user.getId())) {
+            log.warning("User " + user.getEmail() + " attempted to delete order " + id + " that does not belong to them.");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)// For security reasons, this service won't tell if the order exists or not
+                    .body(new AppResponse<>("Order not found", false));
+        }
+        try {
+            orderService.deleteById(id);
+            return ResponseEntity.ok(new AppResponse<>("Order deleted successfully", true));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new AppResponse<>("Error deleting order: " + e.getMessage(), false));
         }
         
     }
