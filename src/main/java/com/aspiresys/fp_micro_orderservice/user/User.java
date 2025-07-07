@@ -3,6 +3,7 @@ package com.aspiresys.fp_micro_orderservice.user;
 import java.util.List;
 
 import com.aspiresys.fp_micro_orderservice.order.Order;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -43,8 +44,8 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@EqualsAndHashCode
-@ToString
+@EqualsAndHashCode(exclude = {"orders"}) // Excluir orders para evitar referencia circular
+@ToString(exclude = {"orders"}) // Excluir orders para evitar referencia circular
 public class User {
     @Id 
     private Long id;
@@ -54,6 +55,7 @@ public class User {
     private String email;
 
     @OneToMany(mappedBy = "user")
+    @JsonIgnore // Evitar referencia circular al serializar a JSON
     private List<Order> orders;
 
 }

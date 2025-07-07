@@ -41,16 +41,21 @@ public class OrderValidationService {
     public CompletableFuture<User> validateUserAsync(String email) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                String userUrl = "http://localhost:8080/user-service/users/find?email=" + email;
+                // Usar localhost directo evitando pasar por el gateway
+                String userUrl = "http://localhost:9001/users/find?email=" + email;
+                log.info("Attempting to validate user with URL: " + userUrl);
                 
                 AppResponse<User> userResponse = webClientBuilder.build()
                     .get()
                     .uri(userUrl)
+                    .header("X-Internal-Service", "internal-secret-key-2024") // Header de seguridad para identificar servicio interno
+                    .header("User-Agent", "order-service") // Identificar el servicio que hace la petición
                     .retrieve()
                     .bodyToMono(new ParameterizedTypeReference<AppResponse<User>>() {})
                     .block();
                 
                 User user = userResponse != null ? userResponse.getData() : null;
+                log.info("User validation response: " + (user != null ? "User found" : "User not found"));
                 
                 if (user == null) {
                     log.warning("User with email " + email + " does not exist in the user service.");
@@ -62,6 +67,7 @@ public class OrderValidationService {
                 throw e;
             } catch (Exception e) {
                 log.warning("Error communicating with user service: " + e.getMessage());
+                e.printStackTrace(); // Para más detalles del error
                 throw new ValidationException("Communication error with user service");
             }
         });
@@ -77,16 +83,20 @@ public class OrderValidationService {
     public CompletableFuture<List<Product>> validateProductsAsync(List<Item> items) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                String productUrl = "http://localhost:8080/product-service/products";
+                // Usar localhost directo al puerto del Product Service
+                String productUrl = "http://localhost:9002/products";
+                log.info("Attempting to validate products with URL: " + productUrl);
                 
                 AppResponse<List<Product>> productResponse = webClientBuilder.build()
                     .get()
                     .uri(productUrl)
+                    .header("User-Agent", "order-service") // Identificar el servicio que hace la petición
                     .retrieve()
                     .bodyToMono(new ParameterizedTypeReference<AppResponse<List<Product>>>() {})
                     .block();
                 
                 List<Product> products = productResponse != null ? productResponse.getData() : null;
+                log.info("Product validation response: " + (products != null ? products.size() + " products found" : "No products found"));
                 
                 if (products == null) {
                     log.warning("Products not found in the product service.");
@@ -98,6 +108,7 @@ public class OrderValidationService {
                 throw e;
             } catch (Exception e) {
                 log.warning("Error communicating with product service: " + e.getMessage());
+                e.printStackTrace(); // Para más detalles del error
                 throw new ValidationException("Failed to retrieve product list");
             }
         });

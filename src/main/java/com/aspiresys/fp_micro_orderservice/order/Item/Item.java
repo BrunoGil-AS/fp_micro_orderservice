@@ -2,7 +2,7 @@ package com.aspiresys.fp_micro_orderservice.order.Item;
 
 import com.aspiresys.fp_micro_orderservice.order.Order;
 import com.aspiresys.fp_micro_orderservice.product.Product;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -44,8 +44,8 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@EqualsAndHashCode
-@ToString
+@EqualsAndHashCode(exclude = {"order"}) // Excluir order para evitar referencia circular
+@ToString(exclude = {"order"}) // Excluir order para evitar referencia circular
 public class Item {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -53,7 +53,7 @@ public class Item {
     
     @ManyToOne
     @JoinColumn(name = "order_id")
-    @JsonIgnore
+    @JsonBackReference // Referencia hacia atrás en la relación Order -> Items
     private Order order;
     @ManyToOne
     @JoinColumn(name = "product_id")

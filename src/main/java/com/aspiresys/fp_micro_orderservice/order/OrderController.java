@@ -93,7 +93,7 @@ public class OrderController {
     @PostMapping("/me")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<AppResponse<Order>> createOrder(@RequestBody Order order, Authentication authentication) {
-        String email = ((Jwt) (authentication.getPrincipal())).getClaimAsString("subject");
+        String email = ((Jwt) (authentication.getPrincipal())).getClaimAsString("sub");
         try {
             // Validate order asynchronously (user and products in parallel)
             OrderValidationService.OrderValidationResult validationResult = 
@@ -164,7 +164,7 @@ public class OrderController {
     @PutMapping("/me")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<AppResponse<Order>> updateOrder(@RequestBody Order order, Authentication authentication) {
-        String email = ((Jwt) (authentication.getPrincipal())).getClaimAsString("subject");
+        String email = ((Jwt) (authentication.getPrincipal())).getClaimAsString("sub");
         User user = userService.getUserByEmail(email);
         if (user == null) {
             log.warning("User " + email + " attempted to update order but does not exist.");
@@ -201,7 +201,7 @@ public class OrderController {
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<AppResponse<Boolean>> deleteOrder(@RequestParam Long id, Authentication authentication) {
 
-        String email = ((Jwt) (authentication.getPrincipal())).getClaimAsString("subject");
+        String email = ((Jwt) (authentication.getPrincipal())).getClaimAsString("sub");
         User user = userService.getUserByEmail(email);
         Order order = orderService.findById(id)
                 .orElse(null);

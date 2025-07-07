@@ -6,6 +6,7 @@ import java.util.List;
 import com.aspiresys.fp_micro_orderservice.order.Item.Item;
 import com.aspiresys.fp_micro_orderservice.product.Product;
 import com.aspiresys.fp_micro_orderservice.user.User;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -15,8 +16,8 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@EqualsAndHashCode
-@ToString
+@EqualsAndHashCode(exclude = {"items"}) // Excluir items para evitar referencia circular
+@ToString(exclude = {"items"}) // Excluir items para evitar referencia circular
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,6 +28,7 @@ public class Order {
     private User user;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference // Gestionar la referencia padre en la relación Order -> Items
     private List<Item> items;
 
     private LocalDateTime createdAt;
