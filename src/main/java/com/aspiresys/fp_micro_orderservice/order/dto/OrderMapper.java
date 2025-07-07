@@ -3,7 +3,9 @@ package com.aspiresys.fp_micro_orderservice.order.dto;
 import com.aspiresys.fp_micro_orderservice.order.Order;
 import com.aspiresys.fp_micro_orderservice.order.Item.Item;
 import com.aspiresys.fp_micro_orderservice.product.Product;
+import com.aspiresys.fp_micro_orderservice.product.ProductRepository;
 import com.aspiresys.fp_micro_orderservice.user.User;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -22,6 +24,9 @@ import java.util.stream.Collectors;
  */
 @Component
 public class OrderMapper {
+
+    @Autowired
+    private ProductRepository productRepository;
 
     /**
      * Converts an Order entity to OrderDTO.
@@ -110,10 +115,9 @@ public class OrderMapper {
             return null;
         }
 
-        // Create a Product entity with just the ID
-        // The actual product details will be fetched and validated by the service
-        Product product = new Product();
-        product.setId(createItemDTO.getProductId());
+        // Get reference to existing product instead of creating a new one
+        // This prevents JPA from trying to insert a new product
+        Product product = productRepository.getReferenceById(createItemDTO.getProductId());
 
         return Item.builder()
                 .order(order)

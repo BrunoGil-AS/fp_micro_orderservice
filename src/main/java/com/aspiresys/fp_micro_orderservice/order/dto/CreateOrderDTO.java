@@ -16,6 +16,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@ToString
 public class CreateOrderDTO {
     private List<CreateItemDTO> items;
     

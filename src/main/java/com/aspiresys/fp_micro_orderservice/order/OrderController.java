@@ -103,6 +103,7 @@ public class OrderController {
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<AppResponse<OrderDTO>> createOrder(@RequestBody CreateOrderDTO createOrderDTO, Authentication authentication) {
         String email = ((Jwt) (authentication.getPrincipal())).getClaimAsString("sub");
+        System.out.println("order: " + createOrderDTO);
         try {
             // Convert DTO to Order entity
             User user = userService.getUserByEmail(email);
