@@ -7,10 +7,10 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import lombok.extern.java.Log;
 
 /**
- * Configuración para habilitar AOP (Aspect-Oriented Programming)
+ * Configuration to enable AOP (Aspect-Oriented Programming)
  * 
- * @EnableAspectJAutoProxy habilita el soporte para AspectJ en Spring
- * proxyTargetClass = true fuerza el uso de proxies CGLIB en lugar de JDK proxies
+ * @EnableAspectJAutoProxy enables AspectJ support in Spring
+ * proxyTargetClass = true forces the use of CGLIB proxies instead of JDK proxies
  * 
  * @author bruno.gil
  */
@@ -28,7 +28,7 @@ public class AopConfig {
     }
     
     /**
-     * Registra la configuración de AOP al inicializar
+     * Registers AOP configuration upon initialization
      */
     private void logAopConfiguration() {
         log.info("=== AOP Configuration ===");

@@ -12,8 +12,8 @@ import lombok.extern.java.Log;
 import java.util.Collection;
 
 /**
- * Aspecto para validar parámetros de entrada de métodos.
- * Proporciona validaciones automáticas antes de la ejecución del método.
+ * Aspect for validating method input parameters.
+ * Provides automatic validations before method execution.
  * 
  * @author bruno.gil
  */
@@ -23,7 +23,7 @@ import java.util.Collection;
 public class ValidationAspect {
     
     /**
-     * Valida parámetros antes de la ejecución del método
+     * Validates parameters before method execution
      */
     @Before("@annotation(validateParameters)")
     public void validateMethodParameters(JoinPoint joinPoint, ValidateParameters validateParameters) {
@@ -31,7 +31,7 @@ public class ValidationAspect {
         String methodName = joinPoint.getSignature().getName();
         String className = joinPoint.getTarget().getClass().getSimpleName();
         
-        // Validar parámetros null
+        // Validate null parameters
         if (validateParameters.notNull()) {
             for (int i = 0; i < args.length; i++) {
                 if (args[i] == null) {
@@ -45,7 +45,7 @@ public class ValidationAspect {
             }
         }
         
-        // Validar colecciones vacías
+        // Validate empty collections
         if (validateParameters.notEmpty()) {
             for (int i = 0; i < args.length; i++) {
                 Object arg = args[i];
@@ -78,7 +78,7 @@ public class ValidationAspect {
             }
         }
         
-        // Log de validación exitosa
+        // Successful validation log
         log.fine(String.format("Parameter validation passed for %s.%s() with %d parameters", 
                 className, methodName, args.length));
     }

@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import lombok.Data;
 
 /**
- * Propiedades de configuración para AOP
+ * Configuration properties for AOP
  * 
  * @author bruno.gil
  */
@@ -16,34 +16,34 @@ import lombok.Data;
 public class AopProperties {
     
     /**
-     * Configuración para auditoría
+     * Configuration for auditing
      */
     private Audit audit = new Audit();
     
     /**
-     * Configuración para métricas de performance
+     * Configuration for performance metrics
      */
     private Performance performance = new Performance();
     
     /**
-     * Configuración para validación
+     * Configuration for validation
      */
     private Validation validation = new Validation();
     
     @Data
     public static class Audit {
         /**
-         * Si la auditoría está habilitada
+         * Whether auditing is enabled
          */
         private boolean enabled = true;
         
         /**
-         * Si se deben loguear los parámetros por defecto
+         * Whether parameters should be logged by default
          */
         private boolean logParameters = true;
         
         /**
-         * Si se deben loguear los resultados por defecto
+         * Whether results should be logged by default
          */
         private boolean logResults = false;
     }
@@ -51,17 +51,17 @@ public class AopProperties {
     @Data
     public static class Performance {
         /**
-         * Si las métricas de performance están habilitadas
+         * Whether performance metrics are enabled
          */
         private boolean enabled = true;
         
         /**
-         * Umbral por defecto para advertencias (en milisegundos)
+         * Default threshold for warnings (in milliseconds)
          */
         private long defaultWarningThreshold = 1000;
         
         /**
-         * Si se debe usar logging detallado por defecto
+         * Whether detailed logging should be used by default
          */
         private boolean detailedLogging = false;
     }
@@ -69,12 +69,12 @@ public class AopProperties {
     @Data
     public static class Validation {
         /**
-         * Si la validación está habilitada
+         * Whether validation is enabled
          */
         private boolean enabled = true;
         
         /**
-         * Si se debe fallar rápido en validaciones
+         * Whether to fail fast on validations
          */
         private boolean failFast = true;
     }

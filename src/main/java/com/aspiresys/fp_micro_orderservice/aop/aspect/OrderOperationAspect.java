@@ -16,8 +16,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 /**
- * Aspecto específico para operaciones de órdenes.
- * Proporciona logging especializado, validaciones de seguridad y métricas de negocio.
+ * Specific aspect for order operations.
+ * Provides specialized logging, security validations and business metrics.
  * 
  * @author bruno.gil
  */
@@ -29,19 +29,22 @@ public class OrderOperationAspect {
     private static final DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
     /**
-     * Pointcut para todos los métodos del OrderController
+     * Pointcut for all OrderController methods
+     * 
      */
     @Pointcut("execution(* com.aspiresys.fp_micro_orderservice.order.OrderController.*(..))")
     public void orderControllerMethods() {}
     
     /**
-     * Pointcut para todos los métodos del OrderService
+     * Pointcut for all OrderService methods
+     * 
      */
     @Pointcut("execution(* com.aspiresys.fp_micro_orderservice.order.OrderService.*(..))")
     public void orderServiceMethods() {}
     
     /**
-     * Pointcut para métodos que modifican órdenes (create, update, delete)
+     * Pointcut for methods that modify orders (create, update, delete)
+     * 
      */
     @Pointcut("execution(* com.aspiresys.fp_micro_orderservice.order.OrderController.createOrder(..)) || " +
               "execution(* com.aspiresys.fp_micro_orderservice.order.OrderController.updateOrder(..)) || " +
@@ -49,7 +52,8 @@ public class OrderOperationAspect {
     public void orderModificationMethods() {}
     
     /**
-     * Log antes de operaciones en el controller
+     * Log before operations in the controller
+     * 
      */
     @Before("orderControllerMethods()")
     public void logBeforeOrderController(JoinPoint joinPoint) {
@@ -62,7 +66,8 @@ public class OrderOperationAspect {
     }
     
     /**
-     * Log y validaciones adicionales para operaciones que modifican órdenes
+     * Logging and additional validations for order modification operations
+     * 
      */
     @Around("orderModificationMethods()")
     public Object logOrderModifications(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -71,20 +76,20 @@ public class OrderOperationAspect {
         String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMAT);
         long startTime = System.currentTimeMillis();
         
-        // Log inicio de operación crítica
-        log.info(String.format("\n[ORDER-MODIFICATION-START] %s\n├─ User: %s\n├─ Operation: %s\n└─ Critical operation initiated", 
+        // Log critical operation start
+        log.info(String.format("\n[ORDER-MODIFICATION-START] %s\n|- User: %s\n|- Operation: %s\n|_ Critical operation initiated", 
                 timestamp, userEmail, methodName));
         
         try {
-            // Validaciones adicionales para órdenes
+            // Additional validations for orders
             validateOrderOperation(joinPoint);
             
-            // Ejecutar método original
+            // Execute original method
             Object result = joinPoint.proceed();
             
-            // Log éxito
+            // Log success
             long executionTime = System.currentTimeMillis() - startTime;
-            log.info(String.format("\n[ORDER-MODIFICATION-SUCCESS] %s\n├─ User: %s\n├─ Operation: %s\n├─ Duration: %d ms\n└─ Operation completed successfully", 
+            log.info(String.format("\n[ORDER-MODIFICATION-SUCCESS] %s\n|- User: %s\n|- Operation: %s\n|- Duration: %d ms\n|_ Operation completed successfully", 
                     LocalDateTime.now().format(TIMESTAMP_FORMAT), userEmail, methodName, executionTime));
             
             return result;
@@ -92,7 +97,7 @@ public class OrderOperationAspect {
         } catch (Exception e) {
             // Log error
             long executionTime = System.currentTimeMillis() - startTime;
-            log.severe(String.format("\n[ORDER-MODIFICATION-ERROR] %s\n├─ User: %s\n├─ Operation: %s\n├─ Duration: %d ms\n├─ Error: %s\n└─ Message: %s", 
+            log.severe(String.format("\n[ORDER-MODIFICATION-ERROR] %s\n|- User: %s\n|- Operation: %s\n|- Duration: %d ms\n|- Error: %s\n|_ Message: %s", 
                     LocalDateTime.now().format(TIMESTAMP_FORMAT), userEmail, methodName, executionTime, 
                     e.getClass().getSimpleName(), e.getMessage()));
             
@@ -101,7 +106,8 @@ public class OrderOperationAspect {
     }
     
     /**
-     * Log después de operaciones exitosas en el service
+     * Log after successful operations in the service
+     * 
      */
     @AfterReturning(pointcut = "orderServiceMethods()", returning = "result")
     public void logAfterOrderService(JoinPoint joinPoint, Object result) {
@@ -113,30 +119,32 @@ public class OrderOperationAspect {
     }
     
     /**
-     * Log cuando ocurren errores en el service
+     * Log when errors occur in the service
+     * 
      */
     @AfterThrowing(pointcut = "orderServiceMethods()", throwing = "exception")
     public void logOrderServiceErrors(JoinPoint joinPoint, Throwable exception) {
         String methodName = joinPoint.getSignature().getName();
         String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMAT);
         
-        log.warning(String.format("\n[ORDER-SERVICE-ERROR] %s\n├─ Method: %s\n├─ Exception: %s\n└─ Message: %s", 
+        log.warning(String.format("\n[ORDER-SERVICE-ERROR] %s\n|- Method: %s\n|- Exception: %s\n|_ Message: %s", 
                 timestamp, methodName, exception.getClass().getSimpleName(), exception.getMessage()));
     }
     
     /**
-     * Validaciones adicionales específicas para operaciones de órdenes
+     * Additional specific validations for order operations
+     * 
      */
     private void validateOrderOperation(ProceedingJoinPoint joinPoint) {
         Object[] args = joinPoint.getArgs();
         String methodName = joinPoint.getSignature().getName();
         
-        // Validar si hay una orden en los parámetros
+        // Validate if there's an order in the parameters
         for (Object arg : args) {
             if (arg instanceof Order) {
                 Order order = (Order) arg;
                 
-                // Validaciones específicas para órdenes
+                // Specific validations for orders
                 if (methodName.equals("createOrder") && order.getId() != null) {
                     log.warning("Attempting to create order with existing ID: " + order.getId());
                 }
@@ -145,7 +153,7 @@ public class OrderOperationAspect {
                     throw new IllegalArgumentException("Cannot update order without ID");
                 }
                 
-                // Validar que la orden tenga items
+                // Validate that the order has items
                 if (order.getItems() == null || order.getItems().isEmpty()) {
                     throw new IllegalArgumentException("Order must have at least one item");
                 }
@@ -157,7 +165,7 @@ public class OrderOperationAspect {
     }
     
     /**
-     * Obtiene información segura sobre el resultado de la operación
+     * Gets safe information about the operation result
      */
     private String getResultInfo(Object result) {
         if (result == null) {
@@ -166,12 +174,12 @@ public class OrderOperationAspect {
         
         String className = result.getClass().getSimpleName();
         
-        // Para ResponseEntity, extraer información del body
+        // For ResponseEntity, extract information from body
         if (className.equals("ResponseEntity")) {
             return "ResponseEntity[" + result.toString().length() + " chars]";
         }
         
-        // Para colecciones, mostrar tamaño
+        // For collections, show size
         if (result instanceof java.util.Collection) {
             return "Collection[" + ((java.util.Collection<?>) result).size() + " items]";
         }
@@ -180,7 +188,7 @@ public class OrderOperationAspect {
     }
     
     /**
-     * Obtiene el email del usuario actual
+     * Gets the current user's email
      */
     private String getCurrentUserEmail() {
         try {

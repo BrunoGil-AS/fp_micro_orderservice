@@ -6,8 +6,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Anotación para auditar operaciones críticas del sistema.
- * Registra automáticamente la información de la operación realizada.
+ * Annotation for auditing critical operations in the system.
+ * Automatically logs operation details such as the operation name, entity type,
+ * and whether to log input parameters and results.
+ * 
  * 
  * @author bruno.gil
  */
@@ -16,22 +18,30 @@ import java.lang.annotation.Target;
 public @interface Auditable {
     
     /**
-     * Descripción de la operación que se está auditando
+     * Description of the operation being audited
+     * This should provide a clear and concise description of the operation
+     * being performed, which will be logged for auditing purposes.
      */
     String operation() default "";
     
     /**
-     * Tipo de entidad sobre la que se realiza la operación
+     * Entity type on which the operation is performed
+     * This can be used to specify the type of entity being modified or accessed.
      */
     String entityType() default "";
     
     /**
-     * Si se debe registrar los parámetros de entrada
+     * If the input parameters should be logged.
+     * This is useful for tracking the inputs to critical operations,
+     * especially in cases where the parameters may affect the outcome of the operation.
+     * 
      */
     boolean logParameters() default true;
     
     /**
-     * Si se debe registrar el resultado de la operación
+     * If the result of the operation should be logged.
+     * This is useful for tracking the outcomes of critical operations,
+     * especially in cases where the result may indicate success or failure.
      */
     boolean logResult() default false;
 }

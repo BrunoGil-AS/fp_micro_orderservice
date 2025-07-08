@@ -6,8 +6,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Anotación para validar parámetros de entrada de métodos.
- * Permite realizar validaciones personalizadas antes de la ejecución del método.
+ * Annotation to validate method input parameters.
+ * Allows performing custom validations before method execution.
  * 
  * @author bruno.gil
  */
@@ -16,17 +16,20 @@ import java.lang.annotation.Target;
 public @interface ValidateParameters {
     
     /**
-     * Si se debe validar que los parámetros no sean null
+     * If the parameters should be validated to not be null.
+     * If true, the aspect will throw an exception if any parameter is null.
      */
     boolean notNull() default true;
     
     /**
-     * Si se debe validar colecciones que no estén vacías
+     * If the parameters should be validated to not be empty.
+     * If true, the aspect will throw an exception if any collection parameter is empty.
      */
     boolean notEmpty() default false;
     
     /**
-     * Mensaje personalizado para errores de validación
+     * Custom message to be used in validation exceptions.
+     * This message will be included in the exception thrown when validation fails.
      */
     String message() default "Parameter validation failed";
 }

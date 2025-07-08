@@ -6,8 +6,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Anotación para medir el tiempo de ejecución de métodos.
- * Útil para monitoreo de performance y identificación de cuellos de botella.
+ * Annotation for measuring the execution time of methods.
+ * This annotation is useful for performance monitoring and identifying bottlenecks.
  * 
  * @author bruno.gil
  */
@@ -16,18 +16,20 @@ import java.lang.annotation.Target;
 public @interface ExecutionTime {
     
     /**
-     * Nombre descriptivo de la operación para los logs
+     * Name of the operation for logging purposes.
+     * If not specified, the method name will be used.
      */
     String operation() default "";
     
     /**
-     * Umbral en milisegundos para alertas de performance.
-     * Si el método tarda más que este umbral, se registra una advertencia.
+     * Threshold in milliseconds for performance alerts.
+     * If the method takes longer than this threshold, a warning is logged.
      */
     long warningThreshold() default 1000;
     
     /**
-     * Si se debe incluir información detallada en el log
+     * If detailed logging is enabled.
+     * If true, additional information about the execution will be logged.
      */
     boolean detailed() default false;
 }

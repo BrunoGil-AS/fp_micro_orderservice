@@ -19,8 +19,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 
 /**
- * Aspecto para auditar operaciones críticas del sistema.
- * Registra automáticamente quién, qué, cuándo y el resultado de las operaciones.
+ * Aspect to audit critical system operations.
+ * Automatically logs who, what, when, and the result of operations.
  * 
  * @author bruno.gil
  */
@@ -32,7 +32,8 @@ public class AuditAspect {
     private static final DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
     /**
-     * Se ejecuta antes de métodos anotados con @Auditable
+     * It executes before methods annotated with @Auditable.
+     * Logs the operation details including user, operation name, entity type, class, method,
      */
     @Before("@annotation(auditable)")
     public void auditBefore(JoinPoint joinPoint, Auditable auditable) {
@@ -43,14 +44,14 @@ public class AuditAspect {
         
         StringBuilder auditLog = new StringBuilder();
         auditLog.append("\n[AUDIT-START] ").append(timestamp);
-        auditLog.append("\n├─ User: ").append(userEmail);
-        auditLog.append("\n├─ Operation: ").append(auditable.operation().isEmpty() ? methodName : auditable.operation());
-        auditLog.append("\n├─ Entity Type: ").append(auditable.entityType().isEmpty() ? "N/A" : auditable.entityType());
-        auditLog.append("\n├─ Class: ").append(className);
-        auditLog.append("\n├─ Method: ").append(methodName);
+        auditLog.append("\n|- User: ").append(userEmail);
+        auditLog.append("\n|- Operation: ").append(auditable.operation().isEmpty() ? methodName : auditable.operation());
+        auditLog.append("\n|- Entity Type: ").append(auditable.entityType().isEmpty() ? "N/A" : auditable.entityType());
+        auditLog.append("\n|- Class: ").append(className);
+        auditLog.append("\n|- Method: ").append(methodName);
         
         if (auditable.logParameters() && joinPoint.getArgs().length > 0) {
-            auditLog.append("\n├─ Parameters: ");
+            auditLog.append("\n|- Parameters: ");
             Object[] args = joinPoint.getArgs();
             for (int i = 0; i < args.length; i++) {
                 if (i > 0) auditLog.append(", ");
@@ -62,7 +63,8 @@ public class AuditAspect {
     }
     
     /**
-     * Se ejecuta después de la ejecución exitosa de métodos anotados con @Auditable
+     * It executes after the successful execution of methods annotated with @Auditable.
+     * Logs the operation details including operation name, status, and result.
      */
     @AfterReturning(pointcut = "@annotation(auditable)", returning = "result")
     public void auditAfterReturning(JoinPoint joinPoint, Auditable auditable, Object result) {
@@ -71,20 +73,22 @@ public class AuditAspect {
         
         StringBuilder auditLog = new StringBuilder();
         auditLog.append("\n[AUDIT-SUCCESS] ").append(timestamp);
-        auditLog.append("\n├─ Operation: ").append(auditable.operation().isEmpty() ? methodName : auditable.operation());
-        auditLog.append("\n├─ Status: SUCCESS");
+        auditLog.append("\n|- Operation: ").append(auditable.operation().isEmpty() ? methodName : auditable.operation());
+        auditLog.append("\n|- Status: SUCCESS");
         
         if (auditable.logResult() && result != null) {
-            auditLog.append("\n└─ Result: ").append(getSafeParameterString(result));
+            auditLog.append("\n|_ Result: ").append(getSafeParameterString(result));
         } else {
-            auditLog.append("\n└─ Result: [Not logged]");
+            auditLog.append("\n|_ Result: [Not logged]");
         }
         
         log.info(auditLog.toString());
     }
     
     /**
-     * Se ejecuta cuando ocurre una excepción en métodos anotados con @Auditable
+     * It executes when an exception occurs in methods annotated with @Auditable.
+     * Logs the operation details including operation name, status, and exception details.
+     * 
      */
     @AfterThrowing(pointcut = "@annotation(auditable)", throwing = "exception")
     public void auditAfterThrowing(JoinPoint joinPoint, Auditable auditable, Throwable exception) {
@@ -94,17 +98,18 @@ public class AuditAspect {
         
         StringBuilder auditLog = new StringBuilder();
         auditLog.append("\n[AUDIT-ERROR] ").append(timestamp);
-        auditLog.append("\n├─ User: ").append(userEmail);
-        auditLog.append("\n├─ Operation: ").append(auditable.operation().isEmpty() ? methodName : auditable.operation());
-        auditLog.append("\n├─ Status: ERROR");
-        auditLog.append("\n├─ Exception: ").append(exception.getClass().getSimpleName());
-        auditLog.append("\n└─ Message: ").append(exception.getMessage());
+        auditLog.append("\n|- User: ").append(userEmail);
+        auditLog.append("\n|- Operation: ").append(auditable.operation().isEmpty() ? methodName : auditable.operation());
+        auditLog.append("\n|- Status: ERROR");
+        auditLog.append("\n|- Exception: ").append(exception.getClass().getSimpleName());
+        auditLog.append("\n|_ Message: ").append(exception.getMessage());
         
         log.warning(auditLog.toString());
     }
     
     /**
-     * Obtiene el email del usuario actual desde el contexto de seguridad
+     * It obtains the email of the current user from the security context.
+     * If the user is not authenticated, returns "SYSTEM".
      */
     private String getCurrentUserEmail() {
         try {
@@ -120,7 +125,8 @@ public class AuditAspect {
     }
     
     /**
-     * Convierte parámetros a string de forma segura, evitando información sensible
+     * Safely formats the parameter for logging.
+     * Avoids logging sensitive information such as passwords or credentials.
      */
     private String getSafeParameterString(Object parameter) {
         if (parameter == null) {
