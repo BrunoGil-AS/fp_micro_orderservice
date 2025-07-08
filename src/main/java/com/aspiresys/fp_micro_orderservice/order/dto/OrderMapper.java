@@ -2,13 +2,8 @@ package com.aspiresys.fp_micro_orderservice.order.dto;
 
 import com.aspiresys.fp_micro_orderservice.order.Order;
 import com.aspiresys.fp_micro_orderservice.order.Item.Item;
-import com.aspiresys.fp_micro_orderservice.product.Product;
-import com.aspiresys.fp_micro_orderservice.product.ProductRepository;
-import com.aspiresys.fp_micro_orderservice.user.User;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,9 +19,6 @@ import java.util.stream.Collectors;
  */
 @Component
 public class OrderMapper {
-
-    @Autowired
-    private ProductRepository productRepository;
 
     /**
      * Converts an Order entity to OrderDTO.
@@ -72,57 +64,6 @@ public class OrderMapper {
                 .productImageUrl(item.getProduct() != null ? item.getProduct().getImageUrl() : null)
                 .quantity(item.getQuantity())
                 .subtotal(item.getSubtotal())
-                .build();
-    }
-
-    /**
-     * Converts a CreateOrderDTO to Order entity.
-     *
-     * @param createOrderDTO the CreateOrderDTO to convert
-     * @param user the User entity to associate with the order
-     * @return Order entity representation
-     */
-    public Order toEntity(CreateOrderDTO createOrderDTO, User user) {
-        if (createOrderDTO == null) {
-            return null;
-        }
-
-        Order order = Order.builder()
-                .user(user)
-                .createdAt(LocalDateTime.now())
-                .items(new ArrayList<>())
-                .build();
-
-        if (createOrderDTO.getItems() != null) {
-            List<Item> items = createOrderDTO.getItems().stream()
-                    .map(createItemDTO -> toItemEntity(createItemDTO, order))
-                    .collect(Collectors.toList());
-            order.setItems(items);
-        }
-
-        return order;
-    }
-
-    /**
-     * Converts a CreateItemDTO to Item entity.
-     *
-     * @param createItemDTO the CreateItemDTO to convert
-     * @param order the Order entity to associate with the item
-     * @return Item entity representation
-     */
-    private Item toItemEntity(CreateOrderDTO.CreateItemDTO createItemDTO, Order order) {
-        if (createItemDTO == null) {
-            return null;
-        }
-
-        // Get reference to existing product instead of creating a new one
-        // This prevents JPA from trying to insert a new product
-        Product product = productRepository.getReferenceById(createItemDTO.getProductId());
-
-        return Item.builder()
-                .order(order)
-                .product(product)
-                .quantity(createItemDTO.getQuantity())
                 .build();
     }
 

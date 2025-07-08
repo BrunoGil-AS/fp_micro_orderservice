@@ -4,7 +4,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
 import com.aspiresys.fp_micro_orderservice.common.dto.AppResponse;
 import com.aspiresys.fp_micro_orderservice.order.Item.Item;
-import com.aspiresys.fp_micro_orderservice.order.dto.CreateOrderDTO;
 import com.aspiresys.fp_micro_orderservice.order.dto.OrderDTO;
 import com.aspiresys.fp_micro_orderservice.order.dto.OrderMapper;
 import com.aspiresys.fp_micro_orderservice.user.User;
@@ -17,6 +16,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -101,23 +101,14 @@ public class OrderController {
 
     @PostMapping("/me")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<AppResponse<OrderDTO>> createOrder(@RequestBody CreateOrderDTO createOrderDTO, Authentication authentication) {
+    public ResponseEntity<AppResponse<OrderDTO>> createOrder(@RequestBody Order orderToCreate, Authentication authentication) {
         String email = ((Jwt) (authentication.getPrincipal())).getClaimAsString("sub");
-        System.out.println("order: " + createOrderDTO);
         try {
-            // Convert DTO to Order entity
-            User user = userService.getUserByEmail(email);
-            if (user == null) {
-                log.warning("User with email " + email + " does not exist.");
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(new AppResponse<>("User does not exist", null));
-            }
-            
-            Order order = orderMapper.toEntity(createOrderDTO, user);
+        
             
             // Validate order asynchronously (user and products in parallel)
             OrderValidationService.OrderValidationResult validationResult = 
-                orderValidationService.validateOrderAsync(order).get();
+                orderValidationService.validateOrderAsync(orderToCreate).get();
             
             if (!validationResult.isValid()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -150,11 +141,11 @@ public class OrderController {
                         .build();
             
             // Set up items with validated products
-            for (Item item : order.getItems()) {
+            for (Item item : orderToCreate.getItems()) {
                 item.setOrder(newOrder);
             }
             
-            newOrder.setItems(new ArrayList<>(order.getItems())); // Set items from the request
+            newOrder.setItems(new ArrayList<>(orderToCreate.getItems())); // Set items from the request
             
             // Save the order
             if (orderService.save(newOrder)) {
@@ -173,7 +164,8 @@ public class OrderController {
 
     @PutMapping("/me")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<AppResponse<OrderDTO>> updateOrder(@RequestBody CreateOrderDTO updateOrderDTO, @RequestParam Long orderId, Authentication authentication) {
+    @Transactional
+    public ResponseEntity<AppResponse<OrderDTO>> updateOrder(@RequestBody Order orderToUpdate, Authentication authentication) {
         String email = ((Jwt) (authentication.getPrincipal())).getClaimAsString("sub");
         User user = userService.getUserByEmail(email);
         if (user == null) {
@@ -182,34 +174,54 @@ public class OrderController {
                     .body(new AppResponse<>("User not found", null));
         }
         
-        Order existingOrder = orderService.findById(orderId)
+        Order existingOrder = orderService.findById(orderToUpdate.getId())
                 .orElse(null);
         if (existingOrder == null) {
-            log.warning("User " + user.getEmail() + " attempted to update order " + orderId + " that does not exist.");
+            log.warning("User " + user.getEmail() + " attempted to update order " + orderToUpdate.getId() + " that does not exist.");
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(new AppResponse<>("Order not found", null));
         }
         if (!existingOrder.getUser().getId().equals(user.getId())) {
-            log.warning("User " + user.getEmail() + " attempted to update order " + orderId + " that does not belong to them.");
+            log.warning("User " + user.getEmail() + " attempted to update order " + orderToUpdate.getId() + " that does not belong to them.");
             return ResponseEntity.status(HttpStatus.NOT_FOUND)// For security reasons, this service won't tell if the order exists or not
                     .body(new AppResponse<>("Order not found", null));
         }
-        
-        // Convert DTO to Order entity items
-        Order updateOrder = orderMapper.toEntity(updateOrderDTO, user);
-        existingOrder.setItems(updateOrder.getItems());
-        
+        // Validate order asynchronously (user and products in parallel)
         try {
-            if (orderService.update(existingOrder)) {
-                OrderDTO orderDTO = orderMapper.toDTO(existingOrder);
-                return ResponseEntity.ok(new AppResponse<>("Order updated successfully", orderDTO));
-            } else {
+            OrderValidationService.OrderValidationResult validationResult = 
+            orderValidationService.validateOrderAsync(orderToUpdate).get();
+            if (!validationResult.isValid()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new AppResponse<>(validationResult.getErrorMessage(), null));
+            }
+
+            // Properly update items to avoid orphan removal issues
+            // First clear existing items (this will remove them due to orphanRemoval = true)
+            existingOrder.getItems().clear();
+            
+            // Add new items with proper order reference
+            for (Item newItem : orderToUpdate.getItems()) {
+                newItem.setId(null); // Clear ID to ensure it's treated as a new item
+                newItem.setOrder(existingOrder);
+                existingOrder.getItems().add(newItem);
+            }
+        
+            try {
+                if (orderService.update(existingOrder)) {
+                    OrderDTO orderDTO = orderMapper.toDTO(existingOrder);
+                    return ResponseEntity.ok(new AppResponse<>("Order updated successfully", orderDTO));
+                } else {
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body(new AppResponse<>("Failed to update order", null));
+                }
+            } catch (Exception e) {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body(new AppResponse<>("Failed to update order", null));
+                        .body(new AppResponse<>("Error updating order: " + e.getMessage(), null));
             }
         } catch (Exception e) {
+            log.warning("Error validating order: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new AppResponse<>("Error updating order: " + e.getMessage(), null));
+                    .body(new AppResponse<>("Error validating order: " + e.getMessage(), null));
         }
     }
 
