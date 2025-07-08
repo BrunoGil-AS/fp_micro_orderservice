@@ -6,6 +6,11 @@ import java.util.List;
 import java.util.Optional;
 import lombok.extern.java.Log;
 
+// AOP imports
+import com.aspiresys.fp_micro_orderservice.aop.annotation.Auditable;
+import com.aspiresys.fp_micro_orderservice.aop.annotation.ExecutionTime;
+import com.aspiresys.fp_micro_orderservice.aop.annotation.ValidateParameters;
+
 /**
  * Implementación de OrderService para la gestión de órdenes de compra.
  */
@@ -19,17 +24,23 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @ExecutionTime(operation = "Find All Orders", warningThreshold = 1000)
     public List<Order> findAll() {
         return orderRepository.findAll();
     }
 
     @Override
+    @ValidateParameters(notNull = true, message = "Order ID cannot be null")
+    @ExecutionTime(operation = "Find Order by ID")
     public Optional<Order> findById(Long id) {
         return orderRepository.findById(id);
     }
 
     @Override
     @Transactional
+    @Auditable(operation = "SAVE_ORDER", entityType = "Order", logParameters = true, logResult = true)
+    @ExecutionTime(operation = "Save Order", warningThreshold = 2000, detailed = true)
+    @ValidateParameters(notNull = true, message = "Order cannot be null")
     public boolean save(Order order) {
         if (order == null) {
             log.warning("Attempted to save null order");
@@ -61,6 +72,9 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Auditable(operation = "DELETE_ORDER", entityType = "Order", logParameters = true, logResult = true)
+    @ExecutionTime(operation = "Delete Order by ID", warningThreshold = 1500)
+    @ValidateParameters(notNull = true, message = "Order ID cannot be null")
     public boolean deleteById(Long id) {
         if (id == null) {
             throw new IllegalArgumentException("Order ID cannot be null");
@@ -74,6 +88,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
+    @Auditable(operation = "UPDATE_ORDER", entityType = "Order", logParameters = true, logResult = true)
+    @ExecutionTime(operation = "Update Order", warningThreshold = 2000, detailed = true)
+    @ValidateParameters(notNull = true, message = "Order cannot be null for update")
     public boolean update(Order order) {
         if (order == null) {
             log.warning("Attempted to update null order");
@@ -106,6 +123,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @ExecutionTime(operation = "Find Orders by User ID")
+    @ValidateParameters(notNull = true, message = "User ID cannot be null")
     public List<Order> findByUserId(Long id) {
         if (id == null) {
             throw new IllegalArgumentException("User ID cannot be null");

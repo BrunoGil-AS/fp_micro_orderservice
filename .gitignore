@@ -37,3 +37,6 @@ build/
 logs/
 **/logs/
 **/*.log
+AOP_IMPLEMENTATION_GUIDE.md
+CONFIGURACION_AOP_COMPLETA.md
+RESUMEN_AOP.md

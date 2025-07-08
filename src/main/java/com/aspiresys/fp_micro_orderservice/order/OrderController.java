@@ -12,6 +12,11 @@ import com.aspiresys.fp_micro_orderservice.user.UserService;
 import lombok.extern.java.Log;
 
 import org.springframework.http.ResponseEntity;
+
+// AOP imports
+import com.aspiresys.fp_micro_orderservice.aop.annotation.Auditable;
+import com.aspiresys.fp_micro_orderservice.aop.annotation.ExecutionTime;
+import com.aspiresys.fp_micro_orderservice.aop.annotation.ValidateParameters;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -60,6 +65,8 @@ public class OrderController {
 
     @GetMapping("/")
     @PreAuthorize("hasRole('ADMIN')") // Only ADMIN can access this endpoint
+    @Auditable(operation = "GET_ALL_ORDERS", entityType = "Order", logResult = true)
+    @ExecutionTime(operation = "Retrieve All Orders", warningThreshold = 2000)
     public ResponseEntity<AppResponse<List<OrderDTO>>> getAllOrders() {
         List<Order> orders = orderService.findAll();
         List<OrderDTO> orderDTOs = orderMapper.toDTOList(orders);
@@ -69,6 +76,9 @@ public class OrderController {
 
     @GetMapping("/find")
     @PreAuthorize("hasRole('ADMIN')") // Allow both ADMIN and USER to access
+    @Auditable(operation = "FIND_ORDER_BY_ID", entityType = "Order", logParameters = true, logResult = true)
+    @ExecutionTime(operation = "Find Order by ID")
+    @ValidateParameters(notNull = true, message = "Order ID cannot be null")
     public ResponseEntity<AppResponse<OrderDTO>> getOrderById(@RequestParam Long id) {
         Order order = orderService.findById(id)
                 .orElse(null);
@@ -83,6 +93,8 @@ public class OrderController {
 
     @GetMapping("/me")
     @PreAuthorize("hasRole('USER')") // Solo usuarios con rol USER pueden acceder a sus propias órdenes
+    @Auditable(operation = "GET_USER_ORDERS", entityType = "Order", logResult = true)
+    @ExecutionTime(operation = "Get User Orders", warningThreshold = 1500)
     public ResponseEntity<AppResponse<List<OrderDTO>>> getOrdersByUser(Authentication authentication) {
         String email = ((Jwt) (authentication.getPrincipal())).getClaimAsString("sub");
         User user = userService.getUserByEmail(email);
@@ -101,6 +113,9 @@ public class OrderController {
 
     @PostMapping("/me")
     @PreAuthorize("hasRole('USER')")
+    @Auditable(operation = "CREATE_ORDER", entityType = "Order", logParameters = true, logResult = true)
+    @ExecutionTime(operation = "Create Order", warningThreshold = 3000, detailed = true)
+    @ValidateParameters(notNull = true, notEmpty = true, message = "Order data cannot be null or empty")
     public ResponseEntity<AppResponse<OrderDTO>> createOrder(@RequestBody Order orderToCreate, Authentication authentication) {
         String email = ((Jwt) (authentication.getPrincipal())).getClaimAsString("sub");
         try {
@@ -165,6 +180,9 @@ public class OrderController {
     @PutMapping("/me")
     @PreAuthorize("hasRole('USER')")
     @Transactional
+    @Auditable(operation = "UPDATE_ORDER", entityType = "Order", logParameters = true, logResult = true)
+    @ExecutionTime(operation = "Update Order", warningThreshold = 2500, detailed = true)
+    @ValidateParameters(notNull = true, message = "Order data cannot be null for update")
     public ResponseEntity<AppResponse<OrderDTO>> updateOrder(@RequestBody Order orderToUpdate, Authentication authentication) {
         String email = ((Jwt) (authentication.getPrincipal())).getClaimAsString("sub");
         User user = userService.getUserByEmail(email);
@@ -227,6 +245,9 @@ public class OrderController {
 
     @DeleteMapping("/me")
     @PreAuthorize("hasRole('USER')")
+    @Auditable(operation = "DELETE_ORDER", entityType = "Order", logParameters = true, logResult = true)
+    @ExecutionTime(operation = "Delete Order", warningThreshold = 2000)
+    @ValidateParameters(notNull = true, message = "Order ID cannot be null for deletion")
     public ResponseEntity<AppResponse<Boolean>> deleteOrder(@RequestParam Long id, Authentication authentication) {
 
         String email = ((Jwt) (authentication.getPrincipal())).getClaimAsString("sub");

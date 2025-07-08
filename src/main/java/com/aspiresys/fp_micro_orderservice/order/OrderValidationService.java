@@ -8,6 +8,10 @@ import org.springframework.web.reactive.function.client.WebClient;
 import lombok.extern.java.Log;
 
 import com.aspiresys.fp_micro_orderservice.common.dto.AppResponse;
+// AOP imports
+import com.aspiresys.fp_micro_orderservice.aop.annotation.Auditable;
+import com.aspiresys.fp_micro_orderservice.aop.annotation.ExecutionTime;
+import com.aspiresys.fp_micro_orderservice.aop.annotation.ValidateParameters;
 import com.aspiresys.fp_micro_orderservice.order.Item.Item;
 import com.aspiresys.fp_micro_orderservice.product.Product;
 import com.aspiresys.fp_micro_orderservice.product.ProductService;
@@ -38,6 +42,9 @@ public class OrderValidationService {
      * @return CompletableFuture with the validated User or null if not found
      */
     @Async("orderValidationExecutor")
+    @Auditable(operation = "VALIDATE_USER_ASYNC", entityType = "User", logParameters = true)
+    @ExecutionTime(operation = "Validate User Async", warningThreshold = 5000, detailed = true)
+    @ValidateParameters(notNull = true, notEmpty = true, message = "Email cannot be null or empty")
     public CompletableFuture<User> validateUserAsync(String email) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -80,6 +87,9 @@ public class OrderValidationService {
      * @return CompletableFuture with the list of products or throws exception if validation fails
      */
     @Async("orderValidationExecutor")
+    @Auditable(operation = "VALIDATE_PRODUCTS_ASYNC", entityType = "Product", logParameters = true)
+    @ExecutionTime(operation = "Validate Products Async", warningThreshold = 5000, detailed = true)
+    @ValidateParameters(notNull = true, notEmpty = true, message = "Items list cannot be null or empty")
     public CompletableFuture<List<Product>> validateProductsAsync(List<Item> items) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -121,6 +131,8 @@ public class OrderValidationService {
      * @param products Available products from the product service
      * @throws ValidationException if any product doesn't exist
      */
+    @ExecutionTime(operation = "Validate and Process Items")
+    @ValidateParameters(notNull = true, message = "Items and products cannot be null")
     public void validateAndProcessItems(List<Item> items, List<Product> products) {
         for (Item item : items) {
             boolean exists = products.stream()
@@ -161,6 +173,8 @@ public class OrderValidationService {
      * @param order Order to validate
      * @return OrderValidationResult containing the validated user and processed items
      */
+    @ExecutionTime(operation = "Validate Complete Order", warningThreshold = 8000, detailed = true)
+    @ValidateParameters(notNull = true, message = "Order cannot be null")
     public CompletableFuture<OrderValidationResult> validateOrderAsync(Order order) {
         // Start both validations in parallel
         CompletableFuture<User> userFuture = validateUserAsync(order.getUser().getEmail());
