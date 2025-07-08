@@ -4,23 +4,25 @@ import com.aspiresys.fp_micro_orderservice.common.dto.AppResponse;
 import com.aspiresys.fp_micro_orderservice.order.Item.ItemService;
 import com.aspiresys.fp_micro_orderservice.product.ProductService;
 import com.aspiresys.fp_micro_orderservice.user.UserService;
+import com.aspiresys.fp_micro_orderservice.order.dto.OrderDTO;
+import com.aspiresys.fp_micro_orderservice.order.dto.OrderMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.jwt.Jwt;
 import com.aspiresys.fp_micro_orderservice.product.Product;
 import com.aspiresys.fp_micro_orderservice.user.User;
 import com.aspiresys.fp_micro_orderservice.order.Item.Item;
-import java.util.Collections;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import reactor.core.publisher.Mono;
 
 
 
@@ -38,6 +40,18 @@ class OrderControllerTest {
 
     @Mock
     private ItemService itemService;
+
+    @Mock
+    private OrderValidationService orderValidationService;
+
+    @Mock
+    private OrderMapper orderMapper;
+
+    @Mock
+    private Authentication authentication;
+
+    @Mock
+    private Jwt jwt;
 
     @InjectMocks
     private OrderController orderController;
@@ -58,13 +72,14 @@ class OrderControllerTest {
     @Mock
     private WebClient.ResponseSpec responseSpec;
 
-    // TODO: Add mocks for the Authentication and Jwt if needed and replace in "null" parameters
-
-
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
         when(webClientBuilder.build()).thenReturn(webClient);
+        
+        // Setup authentication mock
+        when(authentication.getPrincipal()).thenReturn(jwt);
+        when(jwt.getClaimAsString("sub")).thenReturn("test@example.com");
     }
     // Helper para crear una orden de prueba
     private Order createOrderWithUserAndItems(String userEmail, List<Item> items) {
@@ -84,38 +99,32 @@ class OrderControllerTest {
         return item;
     }
     @Test
-    void createOrder_whenUserAndProductsExist_returnsSuccessResponse() {
+    void createOrder_whenUserAndProductsExist_returnsSuccessResponse() throws Exception {
         // Arrange
         Long productId = 1L;
         String userEmail = "test@example.com";
         Order order = createOrderWithUserAndItems(userEmail, Arrays.asList(createItemWithProductId(productId)));
 
-        // Mock user exists
+        // Mock user and validation result
         User user = mock(User.class);
         when(user.getEmail()).thenReturn(userEmail);
-        AppResponse<User> userAppResponse = new AppResponse<>("ok", user);
-
-        // Mock products exist
-        Product product = mock(Product.class);
-        when(product.getId()).thenReturn(productId);
-        AppResponse<List<Product>> productAppResponse = new AppResponse<>("ok", Arrays.asList(product));
-
-        // Mock the WebClient calls for first the user, then the products
-        when(webClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri(anyString())).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
-
-        // Use doReturn to handle the generic type issues
-        doReturn(Mono.just(userAppResponse))
-            .doReturn(Mono.just(productAppResponse))
-            .when(responseSpec).bodyToMono(any(ParameterizedTypeReference.class));
+        
+        OrderValidationService.OrderValidationResult validationResult = mock(OrderValidationService.OrderValidationResult.class);
+        when(validationResult.isValid()).thenReturn(true);
+        when(validationResult.getUser()).thenReturn(user);
+        
+        CompletableFuture<OrderValidationService.OrderValidationResult> validationFuture = CompletableFuture.completedFuture(validationResult);
+        when(orderValidationService.validateOrderAsync(any(Order.class))).thenReturn(validationFuture);
 
         // Mock services
-        when(productService.getProductById(productId)).thenReturn(product);
         when(orderService.save(any(Order.class))).thenReturn(true);
+        
+        // Mock mapper
+        OrderDTO orderDTO = mock(OrderDTO.class);
+        when(orderMapper.toDTO(any(Order.class))).thenReturn(orderDTO);
 
         // Act
-        ResponseEntity<AppResponse<Order>> response = orderController.createOrder(order, null);
+        ResponseEntity<AppResponse<OrderDTO>> response = orderController.createOrder(order, authentication);
 
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -132,17 +141,23 @@ class OrderControllerTest {
             mock(Order.class),
             mock(Order.class)
         );
+        List<OrderDTO> orderDTOs = Arrays.asList(
+            mock(OrderDTO.class),
+            mock(OrderDTO.class)
+        );
         when(orderService.findAll()).thenReturn(orders);
+        when(orderMapper.toDTOList(orders)).thenReturn(orderDTOs);
 
         // Act
-        ResponseEntity<AppResponse<List<Order>>> response = orderController.getAllOrders();
+        ResponseEntity<AppResponse<List<OrderDTO>>> response = orderController.getAllOrders();
 
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("Orders retrieved:", response.getBody().getMessage());
-        assertEquals(orders, response.getBody().getData());
+        assertEquals(orderDTOs, response.getBody().getData());
         verify(orderService).findAll();
+        verify(orderMapper).toDTOList(orders);
     }
 
     @Test
@@ -150,17 +165,20 @@ class OrderControllerTest {
         // Arrange
         Long orderId = 1L;
         Order order = mock(Order.class);
+        OrderDTO orderDTO = mock(OrderDTO.class);
         when(orderService.findById(orderId)).thenReturn(Optional.of(order));
+        when(orderMapper.toDTO(order)).thenReturn(orderDTO);
 
         // Act
-        ResponseEntity<AppResponse<Order>> response = orderController.getOrderById(orderId);
+        ResponseEntity<AppResponse<OrderDTO>> response = orderController.getOrderById(orderId);
 
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("Order found", response.getBody().getMessage());
-        assertEquals(order, response.getBody().getData());
+        assertEquals(orderDTO, response.getBody().getData());
         verify(orderService).findById(orderId);
+        verify(orderMapper).toDTO(order);
     }
 
     @Test
@@ -170,7 +188,7 @@ class OrderControllerTest {
         when(orderService.findById(orderId)).thenReturn(Optional.empty());
 
         // Act
-        ResponseEntity<AppResponse<Order>> response = orderController.getOrderById(orderId);
+        ResponseEntity<AppResponse<OrderDTO>> response = orderController.getOrderById(orderId);
 
         // Assert
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
@@ -178,26 +196,26 @@ class OrderControllerTest {
         assertEquals("Order not found", response.getBody().getMessage());
         assertNull(response.getBody().getData());
         verify(orderService).findById(orderId);
+        verify(orderMapper, never()).toDTO(any(Order.class));
     }
 
     @Test
-    void createOrder_whenUserDoesNotExist_returnsBadRequest() {
-        String userEmail = "nouser@example.com";
+    void createOrder_whenValidationFails_returnsBadRequest() throws Exception {
+        // Arrange
+        String userEmail = "test@example.com";
         Order order = createOrderWithUserAndItems(userEmail, Arrays.asList(createItemWithProductId(1L)));
-        String userUrl = "http://localhost:8080/user-service/users/find?email=" + userEmail;
-
-        when(webClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri(userUrl)).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         
-        @SuppressWarnings("unchecked")
-        Mono<AppResponse<User>> userMono = mock(Mono.class);
-        when(responseSpec.bodyToMono(ArgumentMatchers.<ParameterizedTypeReference<AppResponse<User>>>any()))
-            .thenReturn(userMono);
-        when(userMono.block()).thenReturn(null); // Simula usuario no encontrado
+        OrderValidationService.OrderValidationResult validationResult = mock(OrderValidationService.OrderValidationResult.class);
+        when(validationResult.isValid()).thenReturn(false);
+        when(validationResult.getErrorMessage()).thenReturn("User does not exist");
+        
+        CompletableFuture<OrderValidationService.OrderValidationResult> validationFuture = CompletableFuture.completedFuture(validationResult);
+        when(orderValidationService.validateOrderAsync(any(Order.class))).thenReturn(validationFuture);
 
-        ResponseEntity<AppResponse<Order>> response = orderController.createOrder(order, null);
+        // Act
+        ResponseEntity<AppResponse<OrderDTO>> response = orderController.createOrder(order, authentication);
 
+        // Assert
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("User does not exist", response.getBody().getMessage());
@@ -205,68 +223,83 @@ class OrderControllerTest {
     }
 
     @Test
-    void createOrder_whenProductDoesNotExist_returnsBadRequest() {
-        String userEmail = "test@example.com";
-        Long missingProductId = 99L;
-        Order order = createOrderWithUserAndItems(userEmail, Arrays.asList(createItemWithProductId(missingProductId)));
-
-        // Mock user exists first
+    void createOrder_whenUserEmailMismatch_returnsBadRequest() throws Exception {
+        // Arrange
+        String orderUserEmail = "other@example.com";
+        String authenticatedUserEmail = "test@example.com";
+        Order order = createOrderWithUserAndItems(orderUserEmail, Arrays.asList(createItemWithProductId(1L)));
+        
+        // Mock different email in JWT
+        when(jwt.getClaimAsString("sub")).thenReturn(authenticatedUserEmail);
+        
         User user = mock(User.class);
-        when(user.getEmail()).thenReturn(userEmail);
-        AppResponse<User> userAppResponse = new AppResponse<>("ok", user);
+        when(user.getEmail()).thenReturn(orderUserEmail);
+        
+        OrderValidationService.OrderValidationResult validationResult = mock(OrderValidationService.OrderValidationResult.class);
+        when(validationResult.isValid()).thenReturn(true);
+        when(validationResult.getUser()).thenReturn(user);
+        
+        CompletableFuture<OrderValidationService.OrderValidationResult> validationFuture = CompletableFuture.completedFuture(validationResult);
+        when(orderValidationService.validateOrderAsync(any(Order.class))).thenReturn(validationFuture);
 
-        // Mock products response (empty list - no matching products)
-        AppResponse<List<Product>> productAppResponse = new AppResponse<>("ok", Collections.emptyList());
+        // Act
+        ResponseEntity<AppResponse<OrderDTO>> response = orderController.createOrder(order, authentication);
 
-        // Mock WebClient behavior
-        when(webClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri(anyString())).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
-
-        // First call returns user response, second call returns empty product list
-        doReturn(Mono.just(userAppResponse))
-            .doReturn(Mono.just(productAppResponse))
-            .when(responseSpec).bodyToMono(any(ParameterizedTypeReference.class));
-
-        ResponseEntity<AppResponse<Order>> response = orderController.createOrder(order, null);
-
+        // Assert
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals("Product does not exist", response.getBody().getMessage());
+        assertEquals("You are not allowed to create orders for others", response.getBody().getMessage());
         assertNull(response.getBody().getData());
     }
 
     @Test
-    void createOrder_whenCommunicationErrorWithUserService_returnsBadRequest() {
+    void createOrder_whenOrderSaveFails_returnsInternalServerError() throws Exception {
+        // Arrange
         String userEmail = "test@example.com";
         Order order = createOrderWithUserAndItems(userEmail, Arrays.asList(createItemWithProductId(1L)));
-        String userUrl = "http://localhost:8080/user-service/users/find?email=" + userEmail;
 
-        when(webClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri(userUrl)).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+        User user = mock(User.class);
+        when(user.getEmail()).thenReturn(userEmail);
         
-        @SuppressWarnings("unchecked")
-        Mono<AppResponse<User>> userMono = mock(Mono.class);
-        when(responseSpec.bodyToMono(ArgumentMatchers.<ParameterizedTypeReference<AppResponse<User>>>any()))
-            .thenReturn(userMono);
-        when(userMono.block()).thenThrow(new RuntimeException("Connection error"));
+        OrderValidationService.OrderValidationResult validationResult = mock(OrderValidationService.OrderValidationResult.class);
+        when(validationResult.isValid()).thenReturn(true);
+        when(validationResult.getUser()).thenReturn(user);
+        
+        CompletableFuture<OrderValidationService.OrderValidationResult> validationFuture = CompletableFuture.completedFuture(validationResult);
+        when(orderValidationService.validateOrderAsync(any(Order.class))).thenReturn(validationFuture);
 
-        ResponseEntity<AppResponse<Order>> response = orderController.createOrder(order, null);
+        // Mock save fails
+        when(orderService.save(any(Order.class))).thenReturn(false);
 
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        // Act
+        ResponseEntity<AppResponse<OrderDTO>> response = orderController.createOrder(order, authentication);
+
+        // Assert
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals("Communication error with user service", response.getBody().getMessage());
+        assertEquals("Failed to create order", response.getBody().getMessage());
         assertNull(response.getBody().getData());
     }
 
     @Test
-    void deleteOrder_whenOrderExists_returnsSuccessResponse() {
+    void deleteOrder_whenOrderExistsAndBelongsToUser_returnsSuccessResponse() {
+        // Arrange
         Long orderId = 1L;
-        when(orderService.deleteById(orderId)).thenReturn(true);
+        String userEmail = "test@example.com";
+        
+        User user = mock(User.class);
+        when(user.getId()).thenReturn(1L);
+        when(user.getEmail()).thenReturn(userEmail);
+        when(userService.getUserByEmail(userEmail)).thenReturn(user);
+        
+        Order order = mock(Order.class);
+        when(order.getUser()).thenReturn(user);
+        when(orderService.findById(orderId)).thenReturn(Optional.of(order));
 
-        ResponseEntity<AppResponse<Boolean>> response = orderController.deleteOrder(orderId, null);
+        // Act
+        ResponseEntity<AppResponse<Boolean>> response = orderController.deleteOrder(orderId, authentication);
 
+        // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("Order deleted successfully", response.getBody().getMessage());
@@ -276,15 +309,73 @@ class OrderControllerTest {
 
     @Test
     void deleteOrder_whenOrderDoesNotExist_returnsNotFoundResponse() {
+        // Arrange
         Long orderId = 2L;
-        when(orderService.deleteById(orderId)).thenReturn(false);
+        String userEmail = "test@example.com";
+        
+        User user = mock(User.class);
+        when(user.getId()).thenReturn(1L);
+        when(user.getEmail()).thenReturn(userEmail);
+        when(userService.getUserByEmail(userEmail)).thenReturn(user);
+        
+        when(orderService.findById(orderId)).thenReturn(Optional.empty());
 
-        ResponseEntity<AppResponse<Boolean>> response = orderController.deleteOrder(orderId, null);
+        // Act
+        ResponseEntity<AppResponse<Boolean>> response = orderController.deleteOrder(orderId, authentication);
 
+        // Assert
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("Order not found", response.getBody().getMessage());
         assertFalse(response.getBody().getData());
-        verify(orderService).deleteById(orderId);
+        verify(orderService, never()).deleteById(orderId);
+    }
+
+    @Test
+    void deleteOrder_whenUserDoesNotExist_returnsNotFoundResponse() {
+        // Arrange
+        Long orderId = 1L;
+        String userEmail = "test@example.com";
+        
+        when(userService.getUserByEmail(userEmail)).thenReturn(null);
+
+        // Act
+        ResponseEntity<AppResponse<Boolean>> response = orderController.deleteOrder(orderId, authentication);
+
+        // Assert
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("User not found", response.getBody().getMessage());
+        assertFalse(response.getBody().getData());
+        verify(orderService, never()).deleteById(orderId);
+    }
+
+    @Test
+    void deleteOrder_whenOrderDoesNotBelongToUser_returnsNotFoundResponse() {
+        // Arrange
+        Long orderId = 1L;
+        String userEmail = "test@example.com";
+        
+        User requestingUser = mock(User.class);
+        when(requestingUser.getId()).thenReturn(1L);
+        when(requestingUser.getEmail()).thenReturn(userEmail);
+        when(userService.getUserByEmail(userEmail)).thenReturn(requestingUser);
+        
+        User orderOwner = mock(User.class);
+        when(orderOwner.getId()).thenReturn(2L); // Different user ID
+        
+        Order order = mock(Order.class);
+        when(order.getUser()).thenReturn(orderOwner);
+        when(orderService.findById(orderId)).thenReturn(Optional.of(order));
+
+        // Act
+        ResponseEntity<AppResponse<Boolean>> response = orderController.deleteOrder(orderId, authentication);
+
+        // Assert
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("Order not found", response.getBody().getMessage());
+        assertFalse(response.getBody().getData());
+        verify(orderService, never()).deleteById(orderId);
     }
 }
