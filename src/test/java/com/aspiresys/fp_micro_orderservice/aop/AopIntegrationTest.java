@@ -4,17 +4,16 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.TestPropertySource;
 
 import com.aspiresys.fp_micro_orderservice.order.Order;
 import com.aspiresys.fp_micro_orderservice.order.OrderRepository;
 import com.aspiresys.fp_micro_orderservice.order.OrderService;
-import com.aspiresys.fp_micro_orderservice.order.OrderServiceImpl;
 import com.aspiresys.fp_micro_orderservice.user.User;
 
 import java.time.LocalDateTime;
@@ -23,25 +22,27 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Test unitario para verificar que AOP funciona correctamente
- * en el servicio de órdenes.
+ * Test de integración para verificar que AOP funciona correctamente
+ * en el servicio de órdenes. Usa el contexto completo de Spring.
  * 
  * @author bruno.gil
  */
 @SpringBootTest
 @ActiveProfiles("test")
+@TestPropertySource(properties = {
+    "app.aop.audit.enabled=true",
+    "app.aop.performance.enabled=true", 
+    "app.aop.validation.enabled=true",
+    "spring.aop.auto=true",
+    "spring.aop.proxy-target-class=true"
+})
 public class AopIntegrationTest {
 
-    @Mock
+    @MockBean// latter replacement for MockitoBean
     private OrderRepository orderRepository;
 
+    @Autowired
     private OrderService orderService;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        orderService = new OrderServiceImpl(orderRepository);
-    }
 
     @Test
     void testAopAnnotationsOnFindAll() {
