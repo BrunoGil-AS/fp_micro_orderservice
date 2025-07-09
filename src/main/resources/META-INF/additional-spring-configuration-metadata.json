@@ -1,0 +1,14 @@
+{
+  "properties": [
+    {
+      "name": "service.env.gateway.server",
+      "type": "java.lang.String",
+      "description": "A description for 'service.env.gateway.server'"
+    },
+    {
+      "name": "service.env.frontend.server",
+      "type": "java.lang.String",
+      "description": "A description for 'service.env.frontend.server'"
+    }
+  ]
+}
