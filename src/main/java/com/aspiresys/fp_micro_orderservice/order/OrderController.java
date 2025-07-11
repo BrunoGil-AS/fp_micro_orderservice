@@ -8,6 +8,7 @@ import com.aspiresys.fp_micro_orderservice.order.dto.OrderDTO;
 import com.aspiresys.fp_micro_orderservice.order.dto.OrderMapper;
 import com.aspiresys.fp_micro_orderservice.user.User;
 import com.aspiresys.fp_micro_orderservice.user.UserService;
+import com.aspiresys.fp_micro_orderservice.product.ProductSyncService;
 
 import lombok.extern.java.Log;
 
@@ -62,6 +63,8 @@ public class OrderController {
     private OrderValidationService orderValidationService;
     @Autowired
     private OrderMapper orderMapper;
+    @Autowired
+    private ProductSyncService productSyncService;
 
     @GetMapping("/")
     @PreAuthorize("hasRole('ADMIN')") // Only ADMIN can access this endpoint
@@ -96,6 +99,12 @@ public class OrderController {
     @Auditable(operation = "GET_USER_ORDERS", entityType = "Order", logResult = true)
     @ExecutionTime(operation = "Get User Orders", warningThreshold = 1500)
     public ResponseEntity<AppResponse<List<OrderDTO>>> getOrdersByUser(Authentication authentication) {
+        //  Check if products are synchronized before processing orders
+        if (!productSyncService.isProductDatabaseSynchronized()) {
+            productSyncService.requestProductSynchronization();
+            // Continue processing but with warning logged
+        }
+        
         String email = ((Jwt) (authentication.getPrincipal())).getClaimAsString("sub");
         User user = userService.getUserByEmail(email);
         
@@ -117,6 +126,39 @@ public class OrderController {
     @ExecutionTime(operation = "Create Order", warningThreshold = 3000, detailed = true)
     @ValidateParameters(notNull = true, notEmpty = true, message = "Order data cannot be null or empty")
     public ResponseEntity<AppResponse<OrderDTO>> createOrder(@RequestBody Order orderToCreate, Authentication authentication) {
+        //  Ensure products are synchronized before creating orders
+        if (!productSyncService.isProductDatabaseSynchronized()) {
+            productSyncService.requestProductSynchronization();
+            log.warning(" No products synchronized from Product Service. Cannot create orders without products.");
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(new AppResponse<>("Service temporarily unavailable. Product synchronization required. Please contact administrator.", null));
+        }
+        
+        // Verify that all products in the order exist in our synchronized database
+        boolean allProductsExist = true;
+        StringBuilder missingProducts = new StringBuilder();
+        for (Item item : orderToCreate.getItems()) {
+            if (item.getProduct() != null && item.getProduct().getId() != null) {
+                if (!productSyncService.getProductById(item.getProduct().getId()).isPresent()) {
+                    allProductsExist = false;
+                    if (missingProducts.length() > 0) missingProducts.append(", ");
+                    missingProducts.append(item.getProduct().getId());
+                }
+            } else {
+                allProductsExist = false;
+                if (missingProducts.length() > 0) missingProducts.append(", ");
+                missingProducts.append("null");
+            }
+        }
+        
+        if (!allProductsExist) {
+            String errorMsg = "Products not found in synchronized database: " + missingProducts.toString() + 
+                            ". Please wait for product synchronization to complete or contact administrator.";
+            log.warning(" " + errorMsg);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new AppResponse<>(errorMsg, null));
+        }
+        
         String email = ((Jwt) (authentication.getPrincipal())).getClaimAsString("sub");
         try {
         

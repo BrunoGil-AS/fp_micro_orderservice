@@ -28,25 +28,30 @@ public class ProductSyncService {
      */
     public void saveOrUpdateProduct(ProductMessage productMessage) {
         try {
+            log.info("🔍 SYNC: Checking if product ID " + productMessage.getId() + " exists in database...");
             Optional<Product> existingProduct = productRepository.findById(productMessage.getId());
             
             if (existingProduct.isPresent()) {
                 // Update existing product
+                log.info("📝 SYNC: Product ID " + productMessage.getId() + " exists, updating...");
                 Product product = existingProduct.get();
                 updateProductFromMessage(product, productMessage);
-                productRepository.save(product);
-                log.info("✅ SYNC: Updated product ID " + productMessage.getId() + 
-                         " (" + productMessage.getName() + ") - Event: " + productMessage.getEventType());
+                Product savedProduct = productRepository.save(product);
+                log.info("✅ SYNC: Updated product ID " + savedProduct.getId() + 
+                         " (" + savedProduct.getName() + ") - Event: " + productMessage.getEventType());
             } else {
                 // Create new product
+                log.info("🆕 SYNC: Product ID " + productMessage.getId() + " does not exist, creating new...");
                 Product newProduct = createProductFromMessage(productMessage);
-                productRepository.save(newProduct);
-                log.info("✅ SYNC: Created new product ID " + productMessage.getId() + 
-                         " (" + productMessage.getName() + ") - Event: " + productMessage.getEventType());
+                Product savedProduct = productRepository.save(newProduct);
+                log.info("✅ SYNC: Created new product ID " + savedProduct.getId() + 
+                         " (" + savedProduct.getName() + ") - Event: " + productMessage.getEventType());
+                log.info("📊 SYNC: Total products in database: " + productRepository.count());
             }
         } catch (Exception e) {
             log.severe("❌ SYNC ERROR: Failed to save/update product ID " + productMessage.getId() + 
-                      " - Error: " + e.getMessage());
+                      " (" + productMessage.getName() + ") - Error: " + e.getMessage());
+            log.severe("❌ SYNC ERROR: Event type was: " + productMessage.getEventType());
             e.printStackTrace();
         }
     }
@@ -168,5 +173,39 @@ public class ProductSyncService {
         product.setImageUrl(message.getImageUrl());
         product.setStock(message.getStock());
         product.setBrand(message.getBrand());
+    }
+
+    /**
+     * Triggers a request for product synchronization.
+     * This method logs a request for manual synchronization.
+     * 
+     * Note: Actual synchronization happens automatically via Kafka consumer.
+     * Use the Product Service admin endpoint /admin/kafka/sync/force-full-sync 
+     * to trigger a complete synchronization.
+     */
+    public void requestProductSynchronization() {
+        long currentCount = getProductCount();
+        log.info("🔄 SYNC REQUEST: Current products: " + currentCount + 
+                 ". Kafka consumer is listening for new messages.");
+        log.info("💡 TIP: Use Product Service endpoint POST /admin/kafka/sync/force-full-sync to trigger full sync");
+    }
+
+    /**
+     * Checks if the product database appears to be synchronized.
+     * Returns true if there are products, false if empty.
+     * 
+     * @return true if products exist, false if database appears empty
+     */
+    public boolean isProductDatabaseSynchronized() {
+        long count = getProductCount();
+        boolean isSynced = count > 0;
+        
+        if (!isSynced) {
+            log.warning("⚠️ Product database appears empty. Consider triggering synchronization from Product Service.");
+        } else {
+            log.info("✅ Product database has " + count + " products synchronized.");
+        }
+        
+        return isSynced;
     }
 }
