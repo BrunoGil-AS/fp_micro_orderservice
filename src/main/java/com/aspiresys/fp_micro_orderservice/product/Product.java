@@ -48,6 +48,7 @@ public class Product {
     private Double price;
     private String category;
     private String imageUrl;
+    private String brand; // Added for Kafka integration compatibility
     @JsonIgnore
     @OneToMany(mappedBy = "product")
     private List<Item> Items;
