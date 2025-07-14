@@ -38,10 +38,10 @@ public class ProductConsumerService {
             @Header(value = KafkaHeaders.RECEIVED_PARTITION, required = false) Integer partition) {
 
         try {
-            log.info("📨 KAFKA: Received message from topic: " + (topic != null ? topic : "unknown") + 
+            log.info("KAFKA: Received message from topic: " + (topic != null ? topic : "unknown") + 
                     ", partition: " + (partition != null ? partition : "unknown") + 
                     ", key: " + (key != null ? key : "no-key"));
-            log.info("📨 KAFKA: Message details - Event: " + productMessage.getEventType() + 
+            log.info("KAFKA: Message details - Event: " + productMessage.getEventType() + 
                     ", Product: " + productMessage.getName() + 
                     " (ID: " + productMessage.getId() + ")" +
                     ", Brand: " + productMessage.getBrand() +
@@ -50,11 +50,11 @@ public class ProductConsumerService {
             // Process message based on event type
             processProductMessage(productMessage);
             
-            log.info("✅ KAFKA: Successfully processed message for product ID: " + productMessage.getId());
+            log.info("KAFKA: Successfully processed message for product ID: " + productMessage.getId());
             
         } catch (Exception e) {
-            log.severe("❌ KAFKA ERROR: Failed to process product message: " + e.getMessage());
-            log.severe("❌ Message details - ID: " + productMessage.getId() + 
+            log.severe("KAFKA ERROR: Failed to process product message: " + e.getMessage());
+            log.severe("Message details - ID: " + productMessage.getId() + 
                       ", Event: " + productMessage.getEventType() + 
                       ", Name: " + productMessage.getName());
             e.printStackTrace();
@@ -102,17 +102,17 @@ public class ProductConsumerService {
     @KafkaListener(topics = "${kafka.topic.product:product}", groupId = "${spring.kafka.consumer.group-id}-simple")
     public void consumeProductMessageSimple(@Payload ProductMessage productMessage) {
         try {
-            log.info("📨 KAFKA SIMPLE: Received message - Event: " + productMessage.getEventType() + 
+            log.info("KAFKA SIMPLE: Received message - Event: " + productMessage.getEventType() + 
                     ", Product: " + productMessage.getName() + 
                     " (ID: " + productMessage.getId() + ")");
 
             // Process message based on event type
             processProductMessage(productMessage);
             
-            log.info("✅ KAFKA SIMPLE: Successfully processed message for product ID: " + productMessage.getId());
+            log.info("KAFKA SIMPLE: Successfully processed message for product ID: " + productMessage.getId());
             
         } catch (Exception e) {
-            log.severe("❌ KAFKA SIMPLE ERROR: Failed to process product message: " + e.getMessage());
+            log.severe("KAFKA SIMPLE ERROR: Failed to process product message: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -126,27 +126,27 @@ public class ProductConsumerService {
     private void processProductMessage(ProductMessage productMessage) {
         switch (productMessage.getEventType()) {
             case "PRODUCT_CREATED":
-                log.info("🆕 Processing PRODUCT_CREATED event for ID: " + productMessage.getId());
+                log.info("Processing PRODUCT_CREATED event for ID: " + productMessage.getId());
                 handleProductCreated(productMessage);
                 break;
                 
             case "PRODUCT_UPDATED":
-                log.info("📝 Processing PRODUCT_UPDATED event for ID: " + productMessage.getId());
+                log.info("Processing PRODUCT_UPDATED event for ID: " + productMessage.getId());
                 handleProductUpdated(productMessage);
                 break;
                 
             case "PRODUCT_DELETED":
-                log.info("🗑️ Processing PRODUCT_DELETED event for ID: " + productMessage.getId());
+                log.info("Processing PRODUCT_DELETED event for ID: " + productMessage.getId());
                 handleProductDeleted(productMessage);
                 break;
                 
             case "INITIAL_LOAD":
-                log.info("📦 Processing INITIAL_LOAD event for ID: " + productMessage.getId());
+                log.info("Processing INITIAL_LOAD event for ID: " + productMessage.getId());
                 handleInitialLoad(productMessage);
                 break;
                 
             default:
-                log.warning("❓ Unknown event type received: " + productMessage.getEventType());
+                log.warning("Unknown event type received: " + productMessage.getEventType());
                 break;
         }
     }

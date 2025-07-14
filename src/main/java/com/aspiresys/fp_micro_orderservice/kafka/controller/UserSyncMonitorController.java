@@ -48,12 +48,12 @@ public class UserSyncMonitorController {
                 "No users synchronized yet");
             status.put("timestamp", java.time.LocalDateTime.now());
             
-            log.info("📊 USER SYNC STATUS: " + userCount + " users synchronized");
+            log.info("USER SYNC STATUS: " + userCount + " users synchronized");
             
             return ResponseEntity.ok(status);
             
         } catch (Exception e) {
-            log.warning("❌ Error getting user sync status: " + e.getMessage());
+            log.warning("Error getting user sync status: " + e.getMessage());
             
             Map<String, Object> errorStatus = new HashMap<>();
             errorStatus.put("status", "ERROR");
@@ -84,13 +84,13 @@ public class UserSyncMonitorController {
                 "User not found in local database");
             result.put("timestamp", java.time.LocalDateTime.now());
             
-            log.info("📧 USER SYNC CHECK: " + email + " - " + 
+            log.info("USER SYNC CHECK: " + email + " - " + 
                     (isSynchronized ? "SYNCHRONIZED" : "NOT_FOUND"));
             
             return ResponseEntity.ok(result);
             
         } catch (Exception e) {
-            log.warning("❌ Error checking user sync for " + email + ": " + e.getMessage());
+            log.warning("Error checking user sync for " + email + ": " + e.getMessage());
             
             Map<String, Object> errorResult = new HashMap<>();
             errorResult.put("email", email);
@@ -120,12 +120,12 @@ public class UserSyncMonitorController {
             metrics.put("kafkaConsumerStatus", "ACTIVE");
             metrics.put("message", "User synchronization metrics retrieved successfully");
             
-            log.info("📈 USER SYNC METRICS: Total users: " + totalUsers);
+            log.info("USER SYNC METRICS: Total users: " + totalUsers);
             
             return ResponseEntity.ok(metrics);
             
         } catch (Exception e) {
-            log.warning("❌ Error getting user sync metrics: " + e.getMessage());
+            log.warning("Error getting user sync metrics: " + e.getMessage());
             
             Map<String, Object> errorMetrics = new HashMap<>();
             errorMetrics.put("status", "ERROR");

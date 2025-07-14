@@ -42,7 +42,7 @@ public class UserSyncService {
                     log.warning("⚠️ Unknown event type: " + userMessage.getEventType());
             }
         } catch (Exception e) {
-            log.warning("❌ Error processing user message: " + e.getMessage());
+            log.warning("Error processing user message: " + e.getMessage());
             throw e; // Re-throw to trigger Kafka retry mechanism
         }
     }
@@ -58,16 +58,16 @@ public class UserSyncService {
             User existingUser = userRepository.findByEmail(userMessage.getEmail()).orElse(null);
             
             if (existingUser != null) {
-                log.info("ℹ️ User already exists during " + userMessage.getEventType() + ", updating: " + userMessage.getEmail());
+                log.info("User already exists during " + userMessage.getEventType() + ", updating: " + userMessage.getEmail());
                 updateUserFromMessage(existingUser, userMessage);
                 userRepository.save(existingUser);
             } else {
                 User newUser = createUserFromMessage(userMessage);
                 userRepository.save(newUser);
-                log.info("✅ User created successfully: " + userMessage.getEmail());
+                log.info("User created successfully: " + userMessage.getEmail());
             }
         } catch (Exception e) {
-            log.warning("❌ Failed to create/update user " + userMessage.getEmail() + ": " + e.getMessage());
+            log.warning("Failed to create/update user " + userMessage.getEmail() + ": " + e.getMessage());
             throw e;
         }
     }
@@ -84,15 +84,15 @@ public class UserSyncService {
             if (existingUser != null) {
                 updateUserFromMessage(existingUser, userMessage);
                 userRepository.save(existingUser);
-                log.info("✅ User updated successfully: " + userMessage.getEmail());
+                log.info("User updated successfully: " + userMessage.getEmail());
             } else {
                 // User doesn't exist locally, create it
-                log.info("ℹ️ User not found locally during update, creating: " + userMessage.getEmail());
+                log.info("User not found locally during update, creating: " + userMessage.getEmail());
                 User newUser = createUserFromMessage(userMessage);
                 userRepository.save(newUser);
             }
         } catch (Exception e) {
-            log.warning("❌ Failed to update user " + userMessage.getEmail() + ": " + e.getMessage());
+            log.warning("Failed to update user " + userMessage.getEmail() + ": " + e.getMessage());
             throw e;
         }
     }
@@ -115,12 +115,12 @@ public class UserSyncService {
                 }
                 
                 userRepository.delete(existingUser);
-                log.info("✅ User deleted successfully: " + userMessage.getEmail());
+                log.info("User deleted successfully: " + userMessage.getEmail());
             } else {
-                log.info("ℹ️ User not found locally during deletion: " + userMessage.getEmail());
+                log.info("User not found locally during deletion: " + userMessage.getEmail());
             }
         } catch (Exception e) {
-            log.warning("❌ Failed to delete user " + userMessage.getEmail() + ": " + e.getMessage());
+            log.warning("Failed to delete user " + userMessage.getEmail() + ": " + e.getMessage());
             throw e;
         }
     }

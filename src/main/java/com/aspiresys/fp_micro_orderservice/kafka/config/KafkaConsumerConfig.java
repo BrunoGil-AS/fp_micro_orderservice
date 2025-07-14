@@ -63,8 +63,8 @@ public class KafkaConsumerConfig {
         configProps.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 500);
         configProps.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, 300000);
         
-        log.info("📋 KAFKA CONSUMER CONFIG: Bootstrap servers: " + bootstrapServers);
-        log.info("📋 KAFKA CONSUMER CONFIG: Group ID: " + groupId);
+        log.info("KAFKA Product CONSUMER CONFIG: Bootstrap servers: " + bootstrapServers);
+        log.info("KAFKA Product CONSUMER CONFIG: Group ID: " + groupId);
         
         return new DefaultKafkaConsumerFactory<>(configProps);
     }
@@ -75,7 +75,7 @@ public class KafkaConsumerConfig {
      * @return ConcurrentKafkaListenerContainerFactory for ProductMessage
      */
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, ProductMessage> kafkaListenerContainerFactory() {
+    public ConcurrentKafkaListenerContainerFactory<String, ProductMessage> productKafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, ProductMessage> factory = 
             new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
@@ -94,7 +94,7 @@ public class KafkaConsumerConfig {
         factory.setConcurrency(1); // Single thread to avoid conflicts
         factory.setAutoStartup(true);
         
-        log.info("🔧 KAFKA LISTENER FACTORY: Configured with error handling and concurrency=1");
+        log.info("KAFKA Product LISTENER FACTORY: Configured with error handling and concurrency=1");
         
         return factory;
     }
@@ -123,8 +123,8 @@ public class KafkaConsumerConfig {
         configProps.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 500);
         configProps.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, 300000);
         
-        log.info("📋 KAFKA USER CONSUMER CONFIG: Bootstrap servers: " + bootstrapServers);
-        log.info("📋 KAFKA USER CONSUMER CONFIG: Group ID: " + userGroupId);
+        log.info("KAFKA User CONSUMER CONFIG: Bootstrap servers: " + bootstrapServers);
+        log.info("KAFKA User CONSUMER CONFIG: Group ID: " + userGroupId);
         
         return new DefaultKafkaConsumerFactory<>(configProps);
     }
@@ -154,7 +154,7 @@ public class KafkaConsumerConfig {
         factory.setConcurrency(1); // Single thread to avoid conflicts
         factory.setAutoStartup(true);
         
-        log.info("🔧 KAFKA USER LISTENER FACTORY: Configured with error handling and concurrency=1");
+        log.info("KAFKA USER LISTENER FACTORY: Configured with error handling and concurrency=1");
         
         return factory;
     }

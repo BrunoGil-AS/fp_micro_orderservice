@@ -33,16 +33,16 @@ public class UserConsumerService {
     public void consumeUserMessage(@Payload UserMessage userMessage) {
         
         try {
-            log.info("📨 KAFKA USER: Received message for user: " + userMessage.getEmail());
-            log.info("📨 KAFKA USER: Event type: " + userMessage.getEventType());
+            log.info("KAFKA USER: Received message for user: " + userMessage.getEmail());
+            log.info("KAFKA USER: Event type: " + userMessage.getEventType());
             
             // Process the user message
             userSyncService.processUserMessage(userMessage);
             
-            log.info("✅ KAFKA USER: Successfully processed message for user: " + userMessage.getEmail());
+            log.info("KAFKA USER: Successfully processed message for user: " + userMessage.getEmail());
             
         } catch (Exception e) {
-            log.warning("❌ KAFKA USER: Error processing message for user " + 
+            log.warning("KAFKA USER: Error processing message for user " + 
                        (userMessage != null ? userMessage.getEmail() : "unknown") + ": " + e.getMessage());
             e.printStackTrace();
             
