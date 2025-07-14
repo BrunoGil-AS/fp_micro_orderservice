@@ -62,7 +62,7 @@ public class OrderValidationService {
                 }
                 
                 // If not found locally, log warning and fall back to HTTP call
-                log.warning("⚠️ USER VALIDATION: User not found in local database, falling back to HTTP call: " + email);
+                log.warning("USER VALIDATION: User not found in local database, falling back to HTTP call: " + email);
                 
                 // Fallback to HTTP call (original implementation)
                 return validateUserViaHttp(email);
@@ -70,7 +70,7 @@ public class OrderValidationService {
             } catch (ValidationException e) {
                 throw e;
             } catch (Exception e) {
-                log.warning("❌ Error during user validation: " + e.getMessage());
+                log.warning("Error during user validation: " + e.getMessage());
                 e.printStackTrace();
                 throw new ValidationException("User validation failed");
             }
@@ -87,7 +87,7 @@ public class OrderValidationService {
         try {
             // Usar localhost directo evitando pasar por el gateway
             String userUrl = "http://localhost:9001/users/find?email=" + email;
-            log.info("🌐 HTTP USER VALIDATION: Attempting to validate user with URL: " + userUrl);
+            log.info("HTTP USER VALIDATION: Attempting to validate user with URL: " + userUrl);
             
             AppResponse<User> userResponse = webClientBuilder.build()
                 .get()
@@ -99,26 +99,26 @@ public class OrderValidationService {
                 .block();
             
             User user = userResponse != null ? userResponse.getData() : null;
-            log.info("🌐 HTTP USER VALIDATION: " + (user != null ? "User found" : "User not found"));
+            log.info("HTTP USER VALIDATION: " + (user != null ? "User found" : "User not found"));
             
             if (user == null) {
-                log.warning("❌ User with email " + email + " does not exist in the user service.");
+                log.warning("User with email " + email + " does not exist in the user service.");
                 throw new ValidationException("User does not exist");
             }
             
             // Save user locally for future use
             try {
                 userService.saveUser(user);
-                log.info("💾 Saved user locally from HTTP response: " + email);
+                log.info("Saved user locally from HTTP response: " + email);
             } catch (Exception saveError) {
-                log.warning("⚠️ Failed to save user locally: " + saveError.getMessage());
+                log.warning("Failed to save user locally: " + saveError.getMessage());
             }
             
             return user;
         } catch (ValidationException e) {
             throw e;
         } catch (Exception e) {
-            log.warning("❌ Error communicating with user service: " + e.getMessage());
+            log.warning("Error communicating with user service: " + e.getMessage());
             e.printStackTrace();
             throw new ValidationException("Communication error with user service");
         }
