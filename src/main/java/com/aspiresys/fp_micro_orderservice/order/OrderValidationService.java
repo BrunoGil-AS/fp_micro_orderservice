@@ -22,27 +22,82 @@ import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 
 /**
+ * <h2>OrderValidationService</h2>
+ * <p>
  * Service for validating orders using synchronized local data from Kafka consumers.
- * 
- * This service has been refactored to eliminate HTTP calls to external services.
- * Instead, it relies on:
- * - ProductConsumerService: Keeps product data synchronized via Kafka
- * - UserConsumerService: Keeps user data synchronized via Kafka
- * 
- * Benefits of Kafka-based synchronization:
- * - Better performance (no network calls during validation)
- * - Better reliability (no dependency on external service availability)
- * - Eventual consistency maintained automatically
- * - Real-time updates through Kafka messages
- * 
- * The validation process now:
- * 1. Validates users using local synchronized data
- * 2. Validates products using local synchronized data
- * 3. Processes order items with complete synchronized product information
- * 
- * If data is not found locally, it suggests checking Kafka synchronization status.
- * 
- * @author bruno.gil
+ * This service eliminates HTTP calls to external services by relying on:
+ * </p>
+ * <ul>
+ *   <li><b>ProductConsumerService</b>: Keeps product data synchronized via Kafka</li>
+ *   <li><b>UserConsumerService</b>: Keeps user data synchronized via Kafka</li>
+ * </ul>
+ * <p>
+ * <b>Benefits of Kafka-based synchronization:</b>
+ * </p>
+ * <ul>
+ *   <li>Improved performance (no network calls during validation)</li>
+ *   <li>Increased reliability (no dependency on external service availability)</li>
+ *   <li>Automatic eventual consistency</li>
+ *   <li>Real-time updates through Kafka messages</li>
+ * </ul>
+ * <p>
+ * <b>Validation Process:</b>
+ * </p>
+ * <ol>
+ *   <li>Validates users using locally synchronized data</li>
+ *   <li>Validates products using locally synchronized data</li>
+ *   <li>Processes order items with complete synchronized product information</li>
+ * </ol>
+ * <p>
+ * If data is not found locally, the service suggests checking Kafka synchronization status.
+ * </p>
+ * <p>
+ * <b>Key Methods:</b>
+ * </p>
+ * <ul>
+ *   <li>
+ *     <b>validateUserAsync(String email)</b>:<br>
+ *     Validates user existence using local synchronized data from Kafka consumers.
+ *     <ul>
+ *       <li><b>Parameters:</b> email - User email to validate</li>
+ *       <li><b>Returns:</b> CompletableFuture with the validated User or throws ValidationException if not found</li>
+ *     </ul>
+ *   </li>
+ *   <li>
+ *     <b>validateProductsAsync(List&lt;Item&gt; items)</b>:<br>
+ *     Validates product existence for all order items using synchronized local data.
+ *     <ul>
+ *       <li><b>Parameters:</b> items - Order items to validate product existence</li>
+ *       <li><b>Returns:</b> CompletableFuture with the list of validated products or throws ValidationException if any product is missing</li>
+ *     </ul>
+ *   </li>
+ *   <li>
+ *     <b>validateAndProcessItems(List&lt;Item&gt; items, List&lt;Product&gt; products)</b>:<br>
+ *     Validates and processes order items, ensuring each item uses complete product data from the synchronized database.
+ *     <ul>
+ *       <li><b>Parameters:</b> items - Order items; products - Validated products</li>
+ *       <li><b>Throws:</b> ValidationException if any product validation fails</li>
+ *     </ul>
+ *   </li>
+ *   <li>
+ *     <b>validateOrderAsync(Order order)</b>:<br>
+ *     Validates the complete order asynchronously using synchronized local data, running user and product validation in parallel.
+ *     <ul>
+ *       <li><b>Parameters:</b> order - Order to validate</li>
+ *       <li><b>Returns:</b> CompletableFuture with OrderValidationResult containing the validated user, products, and validation status</li>
+ *     </ul>
+ *   </li>
+ * </ul>
+ * <p>
+ * <b>Custom Types:</b>
+ * </p>
+ * <ul>
+ *   <li><b>ValidationException</b>: Custom exception for validation errors</li>
+ *   <li><b>OrderValidationResult</b>: Result object for order validation, containing user, products, validation status, and error message</li>
+ * </ul>
+ * <p>
+ * <b>Author:</b> bruno.gil
+ * </p>
  */
 @Service
 @Log
