@@ -9,6 +9,16 @@
       "name": "service.env.frontend.server",
       "type": "java.lang.String",
       "description": "A description for 'service.env.frontend.server'"
+    },
+    {
+      "name": "kafka.topic.product",
+      "type": "java.lang.String",
+      "description": "A description for 'kafka.topic.product'"
+    },
+    {
+      "name": "kafka.topic.product",
+      "type": "java.lang.String",
+      "description": "A description for 'kafka.topic.product'"
     }
   ]
 }
