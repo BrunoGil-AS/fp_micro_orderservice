@@ -38,6 +38,7 @@ import java.util.List;
 })
 public class AopIntegrationTest {
 
+    @SuppressWarnings("removal")
     @MockBean// latter replacement for MockitoBean
     private OrderRepository orderRepository;
 
