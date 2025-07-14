@@ -16,6 +16,7 @@ import com.aspiresys.fp_micro_orderservice.order.Item.Item;
 import com.aspiresys.fp_micro_orderservice.product.Product;
 import com.aspiresys.fp_micro_orderservice.product.ProductService;
 import com.aspiresys.fp_micro_orderservice.user.User;
+import com.aspiresys.fp_micro_orderservice.user.UserService;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -35,49 +36,92 @@ public class OrderValidationService {
     @Autowired
     private ProductService productService;
 
+    @Autowired
+    private UserService userService;
+
     /**
-     * Validates user existence asynchronously
+     * Validates user existence using local synchronized data (preferred method).
+     * Falls back to HTTP call if user not found locally.
      * 
      * @param email User email to validate
      * @return CompletableFuture with the validated User or null if not found
      */
     @Async("orderValidationExecutor")
     @Auditable(operation = "VALIDATE_USER_ASYNC", entityType = "User", logParameters = true)
-    @ExecutionTime(operation = "Validate User Async", warningThreshold = 5000, detailed = true)
+    @ExecutionTime(operation = "Validate User Async", warningThreshold = 2000, detailed = true)
     @ValidateParameters(notNull = true, notEmpty = true, message = "Email cannot be null or empty")
     public CompletableFuture<User> validateUserAsync(String email) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                // Usar localhost directo evitando pasar por el gateway
-                String userUrl = "http://localhost:9001/users/find?email=" + email;
-                log.info("Attempting to validate user with URL: " + userUrl);
+                // First, try to get user from local synchronized database
+                User localUser = userService.getUserByEmail(email);
                 
-                AppResponse<User> userResponse = webClientBuilder.build()
-                    .get()
-                    .uri(userUrl)
-                    .header("X-Internal-Service", "internal-secret-key-2024") // Header de seguridad para identificar servicio interno
-                    .header("User-Agent", "order-service") // Identificar el servicio que hace la petición
-                    .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<AppResponse<User>>() {})
-                    .block();
-                
-                User user = userResponse != null ? userResponse.getData() : null;
-                log.info("User validation response: " + (user != null ? "User found" : "User not found"));
-                
-                if (user == null) {
-                    log.warning("User with email " + email + " does not exist in the user service.");
-                    throw new ValidationException("User does not exist");
+                if (localUser != null) {
+                    log.info("✅ USER VALIDATION: User found in local synchronized database: " + email);
+                    return localUser;
                 }
                 
-                return user;
+                // If not found locally, log warning and fall back to HTTP call
+                log.warning("⚠️ USER VALIDATION: User not found in local database, falling back to HTTP call: " + email);
+                
+                // Fallback to HTTP call (original implementation)
+                return validateUserViaHttp(email);
+                
             } catch (ValidationException e) {
                 throw e;
             } catch (Exception e) {
-                log.warning("Error communicating with user service: " + e.getMessage());
-                e.printStackTrace(); // Para más detalles del error
-                throw new ValidationException("Communication error with user service");
+                log.warning("❌ Error during user validation: " + e.getMessage());
+                e.printStackTrace();
+                throw new ValidationException("User validation failed");
             }
         });
+    }
+
+    /**
+     * Validates user via HTTP call to User Service (fallback method).
+     * 
+     * @param email User email to validate
+     * @return User if found, throws ValidationException if not found
+     */
+    private User validateUserViaHttp(String email) {
+        try {
+            // Usar localhost directo evitando pasar por el gateway
+            String userUrl = "http://localhost:9001/users/find?email=" + email;
+            log.info("🌐 HTTP USER VALIDATION: Attempting to validate user with URL: " + userUrl);
+            
+            AppResponse<User> userResponse = webClientBuilder.build()
+                .get()
+                .uri(userUrl)
+                .header("X-Internal-Service", "internal-secret-key-2024") // Header de seguridad para identificar servicio interno
+                .header("User-Agent", "order-service") // Identificar el servicio que hace la petición
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<AppResponse<User>>() {})
+                .block();
+            
+            User user = userResponse != null ? userResponse.getData() : null;
+            log.info("🌐 HTTP USER VALIDATION: " + (user != null ? "User found" : "User not found"));
+            
+            if (user == null) {
+                log.warning("❌ User with email " + email + " does not exist in the user service.");
+                throw new ValidationException("User does not exist");
+            }
+            
+            // Save user locally for future use
+            try {
+                userService.saveUser(user);
+                log.info("💾 Saved user locally from HTTP response: " + email);
+            } catch (Exception saveError) {
+                log.warning("⚠️ Failed to save user locally: " + saveError.getMessage());
+            }
+            
+            return user;
+        } catch (ValidationException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warning("❌ Error communicating with user service: " + e.getMessage());
+            e.printStackTrace();
+            throw new ValidationException("Communication error with user service");
+        }
     }
 
     /**

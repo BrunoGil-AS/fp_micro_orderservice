@@ -53,6 +53,7 @@ public class User {
     private String firstName;
     private String lastName;
     private String email;
+    private String address; // Added to match UserService entity
 
     @OneToMany(mappedBy = "user")
     @JsonIgnore // Evitar referencia circular al serializar a JSON
