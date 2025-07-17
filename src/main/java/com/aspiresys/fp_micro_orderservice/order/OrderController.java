@@ -95,7 +95,7 @@ public class OrderController {
     }
 
     @GetMapping("/me")
-    @PreAuthorize("hasRole('USER')") // Solo usuarios con rol USER pueden acceder a sus propias órdenes
+    @PreAuthorize("hasRole('USER')") // Allow USER to access their own orders
     @Auditable(operation = "GET_USER_ORDERS", entityType = "Order", logResult = true)
     @ExecutionTime(operation = "Get User Orders", warningThreshold = 1500)
     public ResponseEntity<AppResponse<List<OrderDTO>>> getOrdersByUser(Authentication authentication) {

@@ -12,7 +12,13 @@ import com.aspiresys.fp_micro_orderservice.aop.annotation.ExecutionTime;
 import com.aspiresys.fp_micro_orderservice.aop.annotation.ValidateParameters;
 
 /**
- * Implementación de OrderService para la gestión de órdenes de compra.
+ * Implementation of OrderService for managing orders.
+ * 
+ * <p>
+ * Provides methods to find, save, update, and delete orders. This service interacts with the OrderRepository to perform CRUD operations
+ * on order entities.
+ * </p>
+ * @author bruno.gil
  */
 @Service
 @Log
@@ -36,6 +42,17 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.findById(id);
     }
 
+    /**
+     * Saves an order to the repository.
+     * 
+     * <p>
+     * This method checks if the order is null or if it already exists before saving it. It logs the operation and returns true if the
+     * order was saved successfully, false otherwise.
+     * </p>
+     * 
+     * @param order The order to save
+     * @return True if the order was saved successfully, false otherwise
+     */
     @Override
     @Transactional
     @Auditable(operation = "SAVE_ORDER", entityType = "Order", logParameters = true, logResult = true)
@@ -50,7 +67,7 @@ public class OrderServiceImpl implements OrderService {
         log.info("Attempting to save order for user: " + (order.getUser() != null ? order.getUser().getEmail() : "null"));
         log.info("Order items count: " + (order.getItems() != null ? order.getItems().size() : 0));
         
-        // Solo verifica existencia si el id NO es null
+        
         if (order.getId() != null && orderRepository.existsById(order.getId())) {
             log.warning("Order with ID " + order.getId() + " already exists");
             throw new IllegalArgumentException("Order with ID " + order.getId() + " already exists");
@@ -71,6 +88,17 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
+    /**
+     * Deletes an order by its ID.
+     * 
+     * <p>
+     * This method checks if the order ID is null or if the order does not exist before attempting to delete it. It logs the operation and
+     * returns true if the order was deleted successfully, false otherwise.
+     * </p>
+     * 
+     * @param id The ID of the order to delete
+     * @return True if the order was deleted successfully, false otherwise
+     */
     @Override
     @Auditable(operation = "DELETE_ORDER", entityType = "Order", logParameters = true, logResult = true)
     @ExecutionTime(operation = "Delete Order by ID", warningThreshold = 1500)
@@ -86,6 +114,17 @@ public class OrderServiceImpl implements OrderService {
         return !orderRepository.existsById(id); // Check if deletion was successful
     }
 
+    /**
+     * Updates an existing order.
+     * 
+     * <p>
+     * This method checks if the order is null or if it does not exist before attempting to update it. It logs the operation and returns true
+     * if the order was updated successfully, false otherwise.
+     * </p>
+     * 
+     * @param order The order to update
+     * @return True if the order was updated successfully, false otherwise
+     */
     @Override
     @Transactional
     @Auditable(operation = "UPDATE_ORDER", entityType = "Order", logParameters = true, logResult = true)
@@ -122,6 +161,17 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
+    /**
+     * Finds orders by user ID.
+     * 
+     * <p>
+     * This method checks if the user ID is null before attempting to find orders. It logs the operation and returns a list of orders associated
+     * with the user ID.
+     * </p>
+     * 
+     * @param id The ID of the user
+     * @return List of orders associated with the user
+     */
     @Override
     @ExecutionTime(operation = "Find Orders by User ID")
     @ValidateParameters(notNull = true, message = "User ID cannot be null")

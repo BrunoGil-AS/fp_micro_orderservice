@@ -10,14 +10,46 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
+/**
+ * Represents a customer's order in the system.
+ * <p>
+ * The {@code Order} entity contains information about the user who placed the order,
+ * the list of items included in the order, and the creation timestamp.
+ * It provides utility methods for calculating the total price, adding and removing items,
+ * and initializing items from a list of products.
+ * </p>
+ *
+ * <p>
+ * Relationships:
+ * <ul>
+ *   <li>{@code @ManyToOne} with {@link User} - the user who placed the order.</li>
+ *   <li>{@code @OneToMany} with {@link Item} - the items included in the order.</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Typical usage:
+ * <pre>
+ *     Order order = Order.builder()
+ *         .user(user)
+ *         .createdAt(LocalDateTime.now())
+ *         .items(new ArrayList<>())
+ *         .build();
+ *     order.addItem(item);
+ *     double total = order.getTotal();
+ * </pre>
+ * </p>
+ *
+ * @author bruno.gil
+ */
 @Entity
 @Table(name = "orders")
 @Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@EqualsAndHashCode(exclude = {"items"}) // Excluir items para evitar referencia circular
-@ToString(exclude = {"items"}) // Excluir items para evitar referencia circular
+@EqualsAndHashCode(exclude = {"items"})
+@ToString(exclude = {"items"}) 
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,7 +60,7 @@ public class Order {
     private User user;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference // Gestionar la referencia padre en la relación Order -> Items
+    @JsonManagedReference 
     private List<Item> items;
 
     private LocalDateTime createdAt;
