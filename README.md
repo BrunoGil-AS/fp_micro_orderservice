@@ -6,7 +6,6 @@ This service is part of the FP microservices ecosystem and requires other servic
 
 ## Table of Contents
 
-- [Architecture and Components](#architecture-and-components)
 - [Main Technologies](#main-technologies)
 - [Key Components](#key-components)
   - [Entities and Data Model](#1-entities-and-data-model)
@@ -45,11 +44,7 @@ This service is part of the FP microservices ecosystem and requires other servic
 
 ---
 
-## Functionality Overview
-
-### Architecture and Components
-
-### Main Technologies
+## Main Technologies
 
 - **Spring Boot 3.5.0** – Core framework
 - **Spring Security** – OAuth2 Resource Server with JWT
@@ -82,24 +77,6 @@ public class Order {
     private List<Item> items = new ArrayList<>();
 
     private LocalDateTime createdAt;
-
-    // Business logic methods
-    public BigDecimal getTotal() {
-        return items.stream()
-                .map(Item::getSubtotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-    public void addItem(Item item) {
-        items.add(item);
-        item.setOrder(this);
-    }
-
-    public boolean removeItemByProductId(Long productId) {
-        return items.removeIf(item ->
-            item.getProduct() != null &&
-            Objects.equals(item.getProduct().getId(), productId));
-    }
 }
 ```
 
