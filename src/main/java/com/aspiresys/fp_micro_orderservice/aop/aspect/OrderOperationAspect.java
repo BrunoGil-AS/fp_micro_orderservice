@@ -19,6 +19,14 @@ import java.time.format.DateTimeFormatter;
  * Specific aspect for order operations.
  * Provides specialized logging, security validations and business metrics.
  * 
+ * Pointcuts are annotations to define where the aspect should apply.
+ * This aspect includes:
+ * - Logging before and after operations in the controller
+ * - Logging and additional validations for order modification operations
+ * - Logging after successful operations in the service
+ * - Logging when errors occur in the service
+ * - Additional specific validations for order operations
+ * 
  * @author bruno.gil
  */
 @Aspect

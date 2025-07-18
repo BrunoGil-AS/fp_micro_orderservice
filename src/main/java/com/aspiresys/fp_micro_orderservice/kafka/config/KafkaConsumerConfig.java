@@ -45,23 +45,26 @@ public class KafkaConsumerConfig {
      * @return ConsumerFactory for ProductMessage
      */
     @Bean
-    public ConsumerFactory<String, ProductMessage> consumerFactory() {
+    public ConsumerFactory<String, ProductMessage> productConsumerFactory() {
         Map<String, Object> configProps = new HashMap<>();
         configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         configProps.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         configProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        configProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
-        configProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        configProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class); 
+        configProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");// Start from the earliest message
         configProps.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
-        configProps.put(JsonDeserializer.VALUE_DEFAULT_TYPE, ProductMessage.class.getName());
+        configProps.put(JsonDeserializer.VALUE_DEFAULT_TYPE, ProductMessage.class.getName());// Deserialize ProductMessage objects
         
         // Additional resilience configurations
-        configProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
+        configProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);// Enable auto-commit for offsets
+        // This allows the consumer to automatically commit offsets after processing messages
         configProps.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, 1000);
         configProps.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 30000);
         configProps.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, 10000);
-        configProps.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 500);
+        configProps.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 500);// Limit the number of records returned in a single poll
+        // This helps manage memory usage and processing time
         configProps.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, 300000);
+        // This sets the maximum time between polls before the consumer is considered dead
         
         log.info("KAFKA Product CONSUMER CONFIG: Bootstrap servers: " + bootstrapServers);
         log.info("KAFKA Product CONSUMER CONFIG: Group ID: " + groupId);
@@ -78,7 +81,7 @@ public class KafkaConsumerConfig {
     public ConcurrentKafkaListenerContainerFactory<String, ProductMessage> productKafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, ProductMessage> factory = 
             new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerFactory());
+        factory.setConsumerFactory(productConsumerFactory());
         
         // Configure error handling with limited retries
         DefaultErrorHandler errorHandler = new DefaultErrorHandler(
@@ -91,7 +94,8 @@ public class KafkaConsumerConfig {
         );
         
         factory.setCommonErrorHandler(errorHandler);
-        factory.setConcurrency(1); // Single thread to avoid conflicts
+        factory.setConcurrency(1); // Single thread to avoid conflicts of processing
+        // This ensures that messages are processed in order and avoids concurrency issues
         factory.setAutoStartup(true);
         
         log.info("KAFKA Product LISTENER FACTORY: Configured with error handling and concurrency=1");
