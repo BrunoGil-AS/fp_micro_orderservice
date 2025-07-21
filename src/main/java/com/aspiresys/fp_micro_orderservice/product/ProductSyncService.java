@@ -33,25 +33,25 @@ public class ProductSyncService {
             
             if (existingProduct.isPresent()) {
                 // Update existing product
-                log.info("📝 SYNC: Product ID " + productMessage.getId() + " exists, updating...");
+                log.info("SYNC: Product ID " + productMessage.getId() + " exists, updating...");
                 Product product = existingProduct.get();
                 updateProductFromMessage(product, productMessage);
                 Product savedProduct = productRepository.save(product);
-                log.info("✅ SYNC: Updated product ID " + savedProduct.getId() + 
+                log.info("SYNC: Updated product ID " + savedProduct.getId() + 
                          " (" + savedProduct.getName() + ") - Event: " + productMessage.getEventType());
             } else {
                 // Create new product
-                log.info("🆕 SYNC: Product ID " + productMessage.getId() + " does not exist, creating new...");
+                log.info("SYNC: Product ID " + productMessage.getId() + " does not exist, creating new...");
                 Product newProduct = createProductFromMessage(productMessage);
                 Product savedProduct = productRepository.save(newProduct);
-                log.info("✅ SYNC: Created new product ID " + savedProduct.getId() + 
+                log.info("SYNC: Created new product ID " + savedProduct.getId() + 
                          " (" + savedProduct.getName() + ") - Event: " + productMessage.getEventType());
-                log.info("📊 SYNC: Total products in database: " + productRepository.count());
+                log.info("SYNC: Total products in database: " + productRepository.count());
             }
         } catch (Exception e) {
-            log.severe("❌ SYNC ERROR: Failed to save/update product ID " + productMessage.getId() + 
+            log.severe("SYNC ERROR: Failed to save/update product ID " + productMessage.getId() + 
                       " (" + productMessage.getName() + ") - Error: " + e.getMessage());
-            log.severe("❌ SYNC ERROR: Event type was: " + productMessage.getEventType());
+            log.severe("SYNC ERROR: Event type was: " + productMessage.getEventType());
             e.printStackTrace();
         }
     }
@@ -65,12 +65,12 @@ public class ProductSyncService {
         try {
             if (productRepository.existsById(productId)) {
                 productRepository.deleteById(productId);
-                log.info("✅ SYNC: Deleted product ID " + productId + " - Event: PRODUCT_DELETED");
+                log.info("SYNC: Deleted product ID " + productId + " - Event: PRODUCT_DELETED");
             } else {
-                log.warning("⚠️ SYNC: Attempted to delete non-existent product ID " + productId);
+                log.warning("SYNC: Attempted to delete non-existent product ID " + productId);
             }
         } catch (Exception e) {
-            log.severe("❌ SYNC ERROR: Failed to delete product ID " + productId + " - Error: " + e.getMessage());
+            log.severe("SYNC ERROR: Failed to delete product ID " + productId + " - Error: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -150,7 +150,7 @@ public class ProductSyncService {
      */
     public void logSyncStatistics() {
         long totalProducts = productRepository.count();
-        log.info("📊 SYNC STATS: Total synchronized products: " + totalProducts);
+        log.info("SYNC STATS: Total synchronized products: " + totalProducts);
     }
 
     /**
@@ -185,9 +185,9 @@ public class ProductSyncService {
      */
     public void requestProductSynchronization() {
         long currentCount = getProductCount();
-        log.info("🔄 SYNC REQUEST: Current products: " + currentCount + 
+        log.info("SYNC REQUEST: Current products: " + currentCount + 
                  ". Kafka consumer is listening for new messages.");
-        log.info("💡 TIP: Use Product Service endpoint POST /admin/kafka/sync/force-full-sync to trigger full sync");
+        log.info("TIP: Use Product Service endpoint POST /admin/kafka/sync/force-full-sync to trigger full sync");
     }
 
     /**
@@ -201,9 +201,9 @@ public class ProductSyncService {
         boolean isSynced = count > 0;
         
         if (!isSynced) {
-            log.warning("⚠️ Product database appears empty. Consider triggering synchronization from Product Service.");
+            log.warning("Product database appears empty. Consider triggering synchronization from Product Service.");
         } else {
-            log.info("✅ Product database has " + count + " products synchronized.");
+            log.info("Product database has " + count + " products synchronized.");
         }
         
         return isSynced;

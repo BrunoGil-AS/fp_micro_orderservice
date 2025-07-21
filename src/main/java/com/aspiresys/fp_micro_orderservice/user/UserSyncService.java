@@ -39,7 +39,7 @@ public class UserSyncService {
                     handleUserDeleted(userMessage);
                     break;
                 default:
-                    log.warning("⚠️ Unknown event type: " + userMessage.getEventType());
+                    log.warning("Unknown event type: " + userMessage.getEventType());
             }
         } catch (Exception e) {
             log.warning("Error processing user message: " + e.getMessage());
@@ -109,7 +109,7 @@ public class UserSyncService {
             if (existingUser != null) {
                 // Check if user has orders before deleting
                 if (existingUser.getOrders() != null && !existingUser.getOrders().isEmpty()) {
-                    log.warning("⚠️ Cannot delete user " + userMessage.getEmail() + " - has existing orders");
+                    log.warning("Cannot delete user " + userMessage.getEmail() + " - has existing orders");
                     // Optionally, you could mark the user as inactive instead of deleting
                     return;
                 }
