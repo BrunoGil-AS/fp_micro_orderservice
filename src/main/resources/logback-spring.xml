@@ -20,6 +20,24 @@
         <encoder>
             <pattern>${LOG_PATTERN}</pattern>
         </encoder>
+        <!--
+            Rolling Policy: SizeAndTimeBasedRollingPolicy
+            This rolling policy combines the maximum file size and time to manage log rotation.
+
+            Parameters:
+            - <fileNamePattern>: File name pattern for rotated logs.
+              Uses variables like %d{yyyy-MM-dd} for the date and %i for the file index.
+              The files are stored compressed (.gz) in the specified path.
+
+            - <maxFileSize>: Maximum allowed size for each log file before a new one is created.
+              In this case, 40MB.
+
+            - <maxHistory>: Maximum number of days to keep rotated log files.
+              Here, logs from the last 30 days are kept.
+
+            - <totalSizeCap>: Total disk space limit for all rotated log files.
+              When this limit (600MB) is exceeded, the oldest files are automatically deleted.
+        -->
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>${LOG_PATH}/archived/order-service.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
             <maxFileSize>40MB</maxFileSize>

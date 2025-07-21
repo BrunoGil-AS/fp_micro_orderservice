@@ -7,14 +7,20 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
- * Configuración general de la aplicación Order Service
+ * Configuration class for setting up WebClient beans.
+ * Provides a primary WebClient for making HTTP requests without service discovery,
+ * and an additional WebClient with LoadBalancer for service discovery.
  */
 @Configuration
 public class AppConfiguration {
     
     /**
-     * Bean principal para WebClient.Builder para comunicación directa entre microservicios
-     * Sin @LoadBalanced porque comunica directamente con localhost:puerto
+     * Web client builder for making HTTP requests.
+     * This is the primary WebClient used for communication with other services.
+     *
+     * When this bean is used, it will not use service discovery.
+     * 
+     * @return WebClient.Builder instance for creating WebClient instances
      */
     @Bean
     @Primary
@@ -23,8 +29,12 @@ public class AppConfiguration {
     }
     
     /**
-     * Bean adicional para WebClient.Builder con LoadBalancer 
-     * para comunicación usando service discovery (si se necesita en el futuro)
+     * Additional bean for WebClient.Builder with LoadBalancer
+     * for communication using service discovery (if needed in the future).
+     * 
+     * This bean is annotated with @LoadBalanced to enable client-side load balancing.
+     * 
+     * @return WebClient.Builder instance with LoadBalancer enabled
      */
     @Bean("loadBalancedWebClientBuilder")
     @LoadBalanced
