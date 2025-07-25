@@ -48,6 +48,9 @@ class OrderControllerTest {
     private OrderMapper orderMapper;
 
     @Mock
+    private com.aspiresys.fp_micro_orderservice.product.ProductSyncService productSyncService;
+
+    @Mock
     private Authentication authentication;
 
     @Mock
@@ -80,6 +83,10 @@ class OrderControllerTest {
         // Setup authentication mock
         when(authentication.getPrincipal()).thenReturn(jwt);
         when(jwt.getClaimAsString("sub")).thenReturn("test@example.com");
+        
+        // Setup ProductSyncService mock - default behavior is synchronized
+        when(productSyncService.isProductDatabaseSynchronized()).thenReturn(true);
+        when(productSyncService.getProductById(any(Long.class))).thenReturn(Optional.of(mock(Product.class)));
     }
     // Helper para crear una orden de prueba
     private Order createOrderWithUserAndItems(String userEmail, List<Item> items) {

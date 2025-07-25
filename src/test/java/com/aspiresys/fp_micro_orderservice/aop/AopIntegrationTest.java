@@ -9,7 +9,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.TestPropertySource;
+
+import com.aspiresys.fp_micro_orderservice.config.TestConfig;
 
 import com.aspiresys.fp_micro_orderservice.order.Order;
 import com.aspiresys.fp_micro_orderservice.order.OrderRepository;
@@ -27,15 +28,8 @@ import java.util.List;
  * 
  * @author bruno.gil
  */
-@SpringBootTest
+@SpringBootTest(classes = TestConfig.class)
 @ActiveProfiles("test")
-@TestPropertySource(properties = {
-    "app.aop.audit.enabled=true",
-    "app.aop.performance.enabled=true", 
-    "app.aop.validation.enabled=true",
-    "spring.aop.auto=true",
-    "spring.aop.proxy-target-class=true"
-})
 public class AopIntegrationTest {
 
     @SuppressWarnings("removal")

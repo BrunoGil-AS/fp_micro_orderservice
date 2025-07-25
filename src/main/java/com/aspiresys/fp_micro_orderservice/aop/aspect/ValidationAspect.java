@@ -35,11 +35,11 @@ public class ValidationAspect {
         if (validateParameters.notNull()) {
             for (int i = 0; i < args.length; i++) {
                 if (args[i] == null) {
-                    String errorMessage = String.format(
+                    String errorMessage = validateParameters.message();
+                    log.severe(String.format(
                         "Parameter validation failed in %s.%s(): Parameter at index %d is null. %s",
-                        className, methodName, i, validateParameters.message()
-                    );
-                    log.severe(errorMessage);
+                        className, methodName, i, errorMessage
+                    ));
                     throw new IllegalArgumentException(errorMessage);
                 }
             }
