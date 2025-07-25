@@ -3,22 +3,43 @@
     {
       "name": "service.env.gateway.server",
       "type": "java.lang.String",
-      "description": "A description for 'service.env.gateway.server'"
+      "description": "URL del servidor Gateway para configuración de CORS y comunicación entre servicios",
+      "defaultValue": "http://localhost:8080"
     },
     {
       "name": "service.env.frontend.server",
       "type": "java.lang.String",
-      "description": "A description for 'service.env.frontend.server'"
+      "description": "URL del servidor Frontend para configuración de CORS y permitir solicitudes desde la aplicación cliente",
+      "defaultValue": "http://localhost:3000"
     },
     {
       "name": "kafka.topic.product",
       "type": "java.lang.String",
-      "description": "A description for 'kafka.topic.product'"
+      "description": "Nombre del tópico de Kafka para eventos relacionados con productos",
+      "defaultValue": "product-topic"
     },
     {
-      "name": "kafka.topic.product",
+      "name": "app.aop.performance.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Habilita o deshabilita el aspecto AOP para monitoreo de rendimiento de métodos",
+      "defaultValue": true
+    },
+    {
+      "name": "app.aop.audit.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Habilita o deshabilita el aspecto AOP para auditoría de operaciones del sistema",
+      "defaultValue": true
+    },
+    {
+      "name": "app.aop.validation.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Habilita o deshabilita el aspecto AOP para validación de datos de entrada",
+      "defaultValue": true
+    },
+    {
+      "name": "spring.security.enabled",
       "type": "java.lang.String",
-      "description": "A description for 'kafka.topic.product'"
+      "description": "A description for 'spring.security.enabled'"
     }
   ]
 }
