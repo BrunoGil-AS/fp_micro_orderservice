@@ -3,11 +3,13 @@ package com.aspiresys.fp_micro_orderservice.order;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
 import com.aspiresys.fp_micro_orderservice.common.dto.AppResponse;
+import com.aspiresys.fp_micro_orderservice.kafka.producer.ProductProducerService;
 import com.aspiresys.fp_micro_orderservice.order.Item.Item;
 import com.aspiresys.fp_micro_orderservice.order.dto.OrderDTO;
 import com.aspiresys.fp_micro_orderservice.order.dto.OrderMapper;
 import com.aspiresys.fp_micro_orderservice.user.User;
 import com.aspiresys.fp_micro_orderservice.user.UserService;
+import com.netflix.discovery.converters.Auto;
 import com.aspiresys.fp_micro_orderservice.product.ProductSyncService;
 
 import lombok.extern.java.Log;
@@ -65,6 +67,10 @@ public class OrderController {
     private OrderMapper orderMapper;
     @Autowired
     private ProductSyncService productSyncService;
+    @Autowired
+    private ProductProducerService productProducerService;
+    
+
 
     @GetMapping("/")
     @PreAuthorize("hasRole('ADMIN')") // Only ADMIN can access this endpoint

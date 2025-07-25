@@ -28,7 +28,7 @@ public class ProductSyncService {
      */
     public void saveOrUpdateProduct(ProductMessage productMessage) {
         try {
-            log.info("🔍 SYNC: Checking if product ID " + productMessage.getId() + " exists in database...");
+            log.info("SYNC: Checking if product ID " + productMessage.getId() + " exists in database...");
             Optional<Product> existingProduct = productRepository.findById(productMessage.getId());
             
             if (existingProduct.isPresent()) {

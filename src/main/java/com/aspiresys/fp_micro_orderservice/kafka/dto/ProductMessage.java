@@ -44,4 +44,18 @@ public class ProductMessage {
     
     @JsonProperty("timestamp")
     private LocalDateTime timestamp;
+
+    // Constructor for creating messages from Product entities
+    public ProductMessage(Long id, String name, Double price, String category, 
+                         String imageUrl, Integer stock, String brand, String eventType) {
+        this.id = id;
+        this.name = name;
+        this.price = price;
+        this.category = category;
+        this.imageUrl = imageUrl;
+        this.stock = stock;
+        this.brand = brand;
+        this.eventType = eventType;
+        this.timestamp = LocalDateTime.now();
+    }
 }

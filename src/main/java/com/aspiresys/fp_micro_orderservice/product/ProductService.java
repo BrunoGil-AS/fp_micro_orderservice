@@ -11,4 +11,11 @@ public interface ProductService {
     List<Product> getAllProducts();
     Product getProductById(Long id);
     void deleteProduct(Long id);
+    /**
+     * update the stock with subtracting the quantity to the current product
+     * stock.
+     * @param productId of the target product
+     * @param quantity of items
+     */
+    void updateProductStock(Long productId, int quantity);
 }
