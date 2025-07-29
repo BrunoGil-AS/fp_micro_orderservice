@@ -4,43 +4,9 @@ The Order Service is a microservice responsible for managing customer orders in 
 
 This service is part of the FP microservices ecosystem and requires other services (Auth Service, Discovery Server, Product Service) to be running to function properly.
 
-## Table of Contents
+![Service Structure](<./diagrams/Final Project - ServiceStructure.png>)
 
-- [Main Technologies](#main-technologies)
-- [Key Components](#key-components)
-  - [Entities and Data Model](#1-entities-and-data-model)
-  - [REST Controllers](#2-rest-controllers)
-  - [Business Services](#3-business-services)
-  - [OAuth2 Security](#4-oauth2-security)
-  - [Kafka Integration - Data Synchronization](#5-kafka-integration---data-synchronization)
-  - [Aspect-Oriented Programming (AOP)](#6-aspect-oriented-programming-aop)
-- [Development Configuration](#development-configuration)
-  - [Prerequisites](#prerequisites)
-  - [Environment Variables](#environment-variables)
-  - [Database Setup](#database-setup)
-  - [Kafka Setup](#kafka-setup)
-- [API Endpoints](#api-endpoints)
-  - [Authentication Required](#authentication-required)
-  - [User Endpoints (Role USER)](#user-endpoints-role-user)
-  - [Admin Endpoints (Role ADMIN)](#admin-endpoints-role-admin)
-- [Kafka Integration](#kafka-integration)
-  - [Consuming Product Events](#consuming-product-events)
-  - [Supported Event Types](#supported-event-types)
-  - [Consuming User Events](#consuming-user-events)
-- [Aspect-Oriented Programming](#aspect-oriented-programming)
-  - [Operation Auditing](#operation-auditing)
-  - [Performance Monitoring](#performance-monitoring)
-  - [Parameter Validation](#parameter-validation)
-- [Advanced Business Logic](#advanced-business-logic)
-  - [Order Entity Business Methods](#order-entity-business-methods)
-  - [Async Validation](#async-validation)
-- [Logging Configuration](#logging-configuration)
-  - [Logback Configuration](#logback-configuration)
-  - [Log Structure](#log-structure)
-- [Running and Development](#running-and-development)
-  - [Build and Run](#build-and-run)
-  - [IDE Configuration](#ide-configuration)
-  - [Health Checks](#health-checks)
+![Order Flow](<./diagrams/Final Project - OrderFlow.png>)
 
 ---
 
