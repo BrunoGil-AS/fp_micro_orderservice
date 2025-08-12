@@ -2,7 +2,7 @@
 
 The Order Service is a microservice responsible for managing customer orders in the Food Delivery Platform. It provides a RESTful API for order creation, retrieval, updating, and deletion, with advanced business logic and security features.
 
-This service is part of the FP microservices ecosystem and requires other services (Auth Service, Discovery Server, Product Service) to be running to function properly.
+This service is part of the Ecommerce microservices ecosystem and requires other services (Auth Service, Discovery Server, Product Service) to be running to function properly.
 
 ![Service Structure](<./diagrams/Final Project - ServiceStructure.png>)
 
